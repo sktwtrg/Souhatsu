@@ -465,8 +465,11 @@ class Field():
 
             player.naki_status = None
 
+        #playerの更新
         self.nextplayer, self.thisplayer = self.thisplayer, self.nextplayer
         #この時,self.thisplayer = player
+
+        #tsumo
         if len(player.hand.hand) in [1,4,7]:
             player.hand.tsumo(self.deck)
             player.tsumo = True
@@ -475,8 +478,6 @@ class Field():
 
         if hora_check_phase(player):
             return False
-
-        print(player.hand.tenpai_flag())
 
         trash_phase(player)
 
@@ -495,15 +496,9 @@ class Field():
             else:
                 self.nextplayer.naki_status = None
         #鳴き、ロンの処理
-            
-
 
         if player.kaze.enname == "oya":
             self.turn += 1
-
-#        self.naki = self.nakicheck(self.yourhand.hand[0])
-#        if self.naki != []:
-#            print self.naki
 
         return True
 
