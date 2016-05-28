@@ -184,7 +184,7 @@ class Hand():
                 self.yaku.append(Yaku.valueOf("tannyao"))
 
         def tsumo():
-            if self.ronhai == -1:
+            if self.ronhai == -1 and self.furo == []:
                 self.yaku.append(Yaku.valueOf("tsumo"))
 
         contents = list(self.contents)
@@ -193,6 +193,7 @@ class Hand():
         yakuhai(contents)
         tannyao(contents)
         tsumo()
+        self.show_hand()
         print(self.yaku)
 
 
@@ -342,7 +343,7 @@ class Hand():
         self.hand.remove(hai)
         self.hand.remove(hai)
         self.hand.remove(hai)
-        self.tsumo(self, deck)
+        self.tsumo(deck)
         self.furo.append(hai.number)
 
     def ron(self, hai):
@@ -365,10 +366,14 @@ class Deck():
 
 class Player():
 
-    def __init__(self, name, hand):
+    def __init__(self, name):
         self.kaze = None
-        self.hand = hand
+        self.hand = None 
         self.name = name
+        self.score = int()
+
+    def make_hand(self, hand):
+        self.hand = hand
         self.river = []
         self.reach = False
         self.tsumo = False
@@ -400,14 +405,19 @@ class Field():
 
     def __init__(self):
 
-        self.deck = Deck()
-        self.yourplayer = Player("You", Hand(self.deck))
-        self.op_player = Player("OP", Hand(self.deck, initnum=7))
-        self.turn = 1
-        self.whos_turn = Kaze.valueOf("oya")
-        self.who_priority()
-        while self.oneturn(self.nextplayer):
-            pass
+        self.yourplayer = Player("You")
+        self.op_player= Player("OP")
+        while self.onesession():
+            self.deck = Deck()
+            self.yourplayer.make_hand(Hand(self.deck))
+            self.op_player.make_hand(Hand(self.deck, initnum=7))
+            self.turn = 1
+            self.whos_turn = Kaze.valueOf("oya")
+            self.who_priority()
+            while self.oneturn(self.nextplayer):
+                pass
+            print("HAIPAI!!\n")
+            input()
 
     def who_priority(self):
 
@@ -415,6 +425,10 @@ class Field():
         self.op_player.kaze = Kaze.valueOf("ko")
         self.thisplayer = self.op_player
         self.nextplayer = self.yourplayer
+
+    def onesession(self):
+        return True
+
 
     def oneturn(self, player): 
 
@@ -436,12 +450,8 @@ class Field():
             if player.hand.hora_flag(player.hand.contents)\
                     and player.naki_status in [None, "ron"]:
                 player.hand.hora_process(player)
-                if player.name == "You":
-                    print("\nYou win\n")
-                    print(player.hand.yaku)
-                else:
-                    print("\n\You lose\n")
-                    player.hand.show_hand()
+                player.score += 1
+                print(player.score)
                 return True
             else:
                 player.tsumo = True
