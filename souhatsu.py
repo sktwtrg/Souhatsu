@@ -64,6 +64,7 @@ class Yaku(Enum):
     tannyao = (2, "断么九", "tannyao", 1)
     tsumo = (3, "ツモ", "tsumo", 1)
     chitoitsu = (4, "七対子", "chitoitsu", 2) 
+    ippatsu = (5, "一発", "ippatsu", 1) 
 
     def __init__(self, _id, _name, _enname, _hansu):
         self._id = _id
@@ -190,12 +191,17 @@ class Hand():
             if self.ronhai == -1 and self.furo == []:
                 self.yaku.append(Yaku.valueOf("tsumo"))
 
+        def ippatsu(player):
+            if player.ippatsu_flag == True:
+                self.yaku.append(Yaku.valueOf("ippatsu"))
+
         contents = list(self.contents)
         hand = list(self.hand)
         reach(player)
         yakuhai(contents)
         tannyao(contents)
         tsumo()
+        ippatsu(player)
         self.show_hand()
         print(self.yaku)
 
@@ -384,6 +390,7 @@ class Player():
         self.tsumo = False
         self.ron = False
         self.naki_status = None
+        self.ippatsu_flag = False
 
 
 class Command():
@@ -490,6 +497,7 @@ class Field():
                 naki_option = nakicmd_check(nextplayer.hand, player.sutehai, command)
                 if naki_option != None:
                     nextplayer.naki_status = naki_option
+                    player.ippatsu_flag = False
                 else:
                     nextplayer.naki_status = None
             #鳴き、ロンの処理
@@ -501,7 +509,9 @@ class Field():
                 command = Command(str(input()))
                 if command.reach == True:
                     player.reach = True
-                    player.hand.yaku.append(Yaku.valueOf("reach"))
+                    player.ippatsu_flag = True
+                else: 
+                    player.ippatsu_flag = False
                 player.sutehai = command.hai
             else:
                 player.sutehai = player.hand.hand[0]
