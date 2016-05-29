@@ -227,8 +227,15 @@ class Hand():
         tsumo()
         ippatsu(player)
         self.show_hand()
+        print(player.name + " hora!")
+        print("役:",end="")
         print(self.yaku)
+        print("面子:",end="")
         print(self.mentsu)
+        print("頭:",end="")
+        print(self.head)
+        print("副露:",end="")
+        print(self.furo)
 
 
     def hora_flag(self,contents):
@@ -290,8 +297,7 @@ class Hand():
             contents_check = list(contents)[:]
             if contents_check[i] >= 2:
                 contents_check[i] -= 2
-                self.head = i
-#                print("head:",self.head)
+                self.head = Block([Hai.valueAt(i)]*2, block_type = "head")
                 if mentsu_check(contents_check, 0):
                     return True
         else:
@@ -384,12 +390,19 @@ class Hand():
         return nakipattern
 
     def pon(self, hai):
-        self.contents[hai.number] -= 2
-        self.hand.remove(hai)
-        self.hand.remove(hai)
-        num = str(hai.number)
-        num = num + num + num
-        self.furo.append("pon:" + num)
+        self.hand.append(hai)
+        num = hai.number
+        self.contents[hai.number] -= 3
+        block_hais = []
+        for i in range(3):
+            for hai in self.hand:
+                if hai.number != num:
+                    continue
+                self.hand.remove(hai)
+                block_hais.append(hai)
+                break
+        block = Block(block_hais, block_type = "minko")
+        self.furo.append(block)
 
     def daiminkan(self, hai, deck):
         self.hand.append(hai)
@@ -492,7 +505,7 @@ class Field():
         self.previous_winner = None
         while self.onesession():
             self.deck = Deck()
-            self.yourplayer.make_hand(Hand(self.deck, test = [5,5,5,10,9,6,9,1]))
+            self.yourplayer.make_hand(Hand(self.deck, test = [5,5,5,10,9,9,9,9]))
             self.op_player.make_hand(Hand(self.deck, initnum=7, test = [2,2,2,1,1,1,9]))
             self.turn = 1
             self.whos_turn = Kaze.valueOf("oya")
