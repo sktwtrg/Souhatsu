@@ -59,17 +59,17 @@ class Hai(Enum):
 
 class Yaku(Enum):
 
-    yakuhai = (0, "役", "yaku")
-    reach = (1, "リーチ", "reach")
-    tannyao = (2, "断么九", "tannyao")
-    tsumo = (3, "ツモ", "tsumo")
-    chitoitsu = (4, "七対子", "chitoitsu")
+    yakuhai = (0, "役", "yaku", 1)
+    reach = (1, "リーチ", "reach", 1)
+    tannyao = (2, "断么九", "tannyao", 1)
+    tsumo = (3, "ツモ", "tsumo", 1)
+    chitoitsu = (4, "七対子", "chitoitsu", 2) 
 
-
-    def __init__(self, _id, _name, _enname):
+    def __init__(self, _id, _name, _enname, _hansu):
         self._id = _id
         self._name = _name
         self._enname = _enname
+        self._hansu = _hansu
 
     @classmethod
     def valueOf(cls, enname):
@@ -94,6 +94,9 @@ class Yaku(Enum):
     def enname(self):
         return self._enname
 
+    @property
+    def hansu(self):
+        return self._hansu
 
 class Kaze(Enum):
 
@@ -412,6 +415,7 @@ class Field():
 
         self.yourplayer = Player("You")
         self.op_player= Player("OP")
+        self.previous_winner = None
         while self.onesession():
             self.deck = Deck()
             self.yourplayer.make_hand(Hand(self.deck))
@@ -426,10 +430,19 @@ class Field():
 
     def who_priority(self):
 
-        self.yourplayer.kaze = Kaze.valueOf("oya")
-        self.op_player.kaze = Kaze.valueOf("ko")
-        self.thisplayer = self.op_player
-        self.nextplayer = self.yourplayer
+        if self.previous_winner != None:
+            self.nextplayer = self.previous_winner
+            if self.nextplayer == self.yourplayer:
+                self.thisplayer = self.op_player
+            else:
+                self.thisplayer = self.yourplayer
+            self.thisplayer.kaze = Kaze.valueOf("oya")
+            self.nextplayer.kaze = Kaze.valueOf("ko")
+        else:
+            self.yourplayer.kaze = Kaze.valueOf("oya")
+            self.op_player.kaze = Kaze.valueOf("ko")
+            self.thisplayer = self.op_player
+            self.nextplayer = self.yourplayer
 
     def onesession(self):
         return True
@@ -444,6 +457,7 @@ class Field():
             if player.hand.hora_flag(player.hand.contents)\
                     and player.naki_status in [None, "ron"]:
                 player.hand.hora_process(player)
+                self.previous_winner = player
                 player.score += 1
                 print(player.score)
                 return True
