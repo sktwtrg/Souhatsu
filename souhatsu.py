@@ -135,10 +135,17 @@ class Kaze(Enum):
         else:
             return self.valueOf("oya")
 
-class Mentsu():
+class Block():
 
-    def __init__(self):
-        pass
+    def __init__(self, hais, block_type=None):
+        self.type = block_type
+        self.hais = hais
+        self.numbers = []
+        for hai in hais:
+            self.numbers.append(hai.number)
+
+    def __repr__(self):
+        return self.numbers.__repr__()
 
 
 class Hand():
@@ -237,9 +244,13 @@ class Hand():
         def mentsu_check(check_contents, count):
             if check_contents == [0]*10:
                 return True
+            mentsu_hais = []
             if check_contents[0] >= 3:
                 check_contents[0] -= 3
-                self.mentsu.append(0)
+                mentsu_hais.append(Hai.valueAt(0))
+                mentsu_hais.append(Hai.valueAt(0))
+                mentsu_hais.append(Hai.valueAt(0))
+                self.mentsu.append(Block(mentsu_hais, block_type = "anko"))
                 if mentsu_check(check_contents,count+1):
                     return True
                 del self.mentsu[-1]
@@ -247,7 +258,10 @@ class Hand():
             for i in range(1,10):
                 if check_contents[i] >= 3:
                     check_contents[i] -= 3
-                    self.mentsu.append(i)
+                    mentsu_hais.append(Hai.valueAt(i))
+                    mentsu_hais.append(Hai.valueAt(i))
+                    mentsu_hais.append(Hai.valueAt(i))
+                    self.mentsu.append(Block(mentsu_hais, block_type = "anko"))
                     if mentsu_check(check_contents, count+1):
                         return True
                     del self.mentsu[-1]
@@ -257,7 +271,10 @@ class Hand():
                     check_contents[i] -= 1
                     check_contents[i+1] -= 1
                     check_contents[i+2] -= 1
-                    self.mentsu.append(10+i)
+                    mentsu_hais.append(Hai.valueAt(i))
+                    mentsu_hais.append(Hai.valueAt(i+1))
+                    mentsu_hais.append(Hai.valueAt(i+2))
+                    self.mentsu.append(Block(mentsu_hais, block_type = "shuntsu"))
                     if mentsu_check(check_contents, count+1):
                         return True
                     del self.mentsu[-1]
@@ -349,7 +366,7 @@ class Hand():
     def test_tsumo(self, number):
         self.tsumohai = Hai.valueAt(number)
         self.hand.append(self.tsumohai)
-        self.contents[number] += 1
+        self.contents[self.tsumohai.number] += 1
 
     def nakipattern(self, hai):
         def pon_check(hai):
@@ -380,7 +397,8 @@ class Hand():
         self.hand.remove(hai)
         self.hand.remove(hai)
         self.tsumo(deck)
-        self.furo.append("daiminkan:" + str(hai.number)*4)
+        block = Block([hai] * 4, block_type = "daiminkan")
+        self.furo.append(block)
         self.show_hand()
 
     def ankan(self, hai, deck):
@@ -390,7 +408,8 @@ class Hand():
         self.hand.remove(hai)
         self.hand.remove(hai)
         self.tsumo(deck)
-        self.furo.append("ankan:" + str(hai.number)*4)
+        block = Block([hai] * 4, block_type = "daiminkan")
+        self.furo.append(block)
         self.show_hand()
 
     def ron(self, hai):
@@ -462,7 +481,7 @@ class Field():
         self.previous_winner = None
         while self.onesession():
             self.deck = Deck()
-            self.yourplayer.make_hand(Hand(self.deck, test = [0,0,0,0,7,6,9,9]))
+            self.yourplayer.make_hand(Hand(self.deck, test = [0,0,0,0,9,6,9,9]))
             self.op_player.make_hand(Hand(self.deck, initnum=7, test = [2,2,2,1,1,1,9]))
             self.turn = 1
             self.whos_turn = Kaze.valueOf("oya")
@@ -558,9 +577,10 @@ class Field():
                     player.rinshan = True
                     player.hand.ankan(command.hai, deck)
                     if hora_check_phase(player):
-                        return False
+                        return True
                     player.rinshan = False
                     trash_phase(player, deck)
+                    return
                 else:
                     player.sutehai = command.hai
 
@@ -594,7 +614,9 @@ class Field():
         self.show_field()
         if hora_check_phase(player):
             return False
-        trash_phase(player, self.deck)
+        if trash_phase(player, self.deck):
+            #嶺上開花の時のみ終わる
+            return False
         naki_phase(player, self.nextplayer)
         #鳴き、ロンの処理
 
