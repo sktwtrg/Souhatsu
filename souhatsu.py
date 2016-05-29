@@ -497,6 +497,7 @@ class Field():
 
         def trash_phase(player):
             if player.name == "You":
+                print("PUT COMMAND")
                 command = Command(str(input()))
                 if command.reach == True:
                     player.reach = True
