@@ -2,16 +2,16 @@ import random
 from enum import Enum
 
 class Hai(Enum):
-    SU1 = (0, 1, '一索', 'yi')
-    SU2 = (1, 2, '二索', 'er')
-    SU3 = (2, 3, '三索', 'san')
-    SU4 = (3, 4, '四索', 'si')
-    SU5 = (4, 5, '五索', 'wu')
-    SU6 = (5, 6, '六索', 'liu')
-    SU7 = (6, 7, '七索', 'qi')
-    SU8 = (7, 8, '八索', 'ba')
-    SU9 = (8, 9, '九索', 'jiu')
-    HATSU = (9, 0, '發', 'fa')
+    SU1 = (1, 1, '一索', 'yi')
+    SU2 = (2, 2, '二索', 'er')
+    SU3 = (3, 3, '三索', 'san')
+    SU4 = (4, 4, '四索', 'si')
+    SU5 = (5, 5, '五索', 'wu')
+    SU6 = (6, 6, '六索', 'liu')
+    SU7 = (7, 7, '七索', 'qi')
+    SU8 = (8, 8, '八索', 'ba')
+    SU9 = (9, 9, '九索', 'jiu')
+    HATSU = (0, 0, '發', 'fa')
     DS5 = (10, 5, '赤五', 'rw')
 
     def __init__(self, _id, _number, _hainame, _chiname):
@@ -22,7 +22,7 @@ class Hai(Enum):
     @classmethod
     def valueAt(cls, num):
         for hai in cls:
-            if hai.number == num:
+            if hai.ID == num:
                 return hai
         return None
 
@@ -336,7 +336,9 @@ class Hand():
         self.contents[hai.number] -= 2
         self.hand.remove(hai)
         self.hand.remove(hai)
-        self.furo.append(hai.number)
+        num = str(hai.number)
+        num = num + num + num
+        self.furo.append(num)
 
     def daiminkan(self, hai, deck):
         self.contents[hai.number] -= 3
@@ -385,17 +387,20 @@ class Command():
     
     def __init__(self,cmd):
 
-        if len(cmd) == 1:
-            self.reach = False
-            self.number = int(cmd)
+        if "5r" in cmd:
+            self.reach  = False
+            self.number = int(5)
             self.kan = False
-        elif cmd[0] == "r":
+            self.hai = Hai.valueAt(10)
+        else:
+            self.reach = False
+            self.number = int(cmd[-1])
+            self.kan = False
+            self.hai = Hai.valueAt(self.number)
+
+        if cmd[0] == "r":
             self.reach = True
-            self.number = int(cmd[1])
-            self.kan = False
         elif cmd[0] == "k":
-            self.reach = False
-            self.number = int(cmd[1]) 
             self.kan = True
         elif cmd == "tsumo":
             pass
@@ -435,17 +440,6 @@ class Field():
         def tsumo_phase():
             pass
 
-        def naki_phase(hand,hai,cmd):
-            if cmd == "pon":
-                hand.pon(hai)
-            elif cmd == "kan":
-                hand.daiminkan(hai,self.deck)
-            elif cmd == "ron":
-                hand.ron(hai)
-            else:
-                return None
-            return cmd
-
         def hora_check_phase(player):
             if player.hand.hora_flag(player.hand.contents)\
                     and player.naki_status in [None, "ron"]:
@@ -458,16 +452,46 @@ class Field():
                 player.ron = False
                 return False
 
+        def nakicmd_check(hand,hai,cmd):
+            if cmd == "pon":
+                hand.pon(hai)
+            elif cmd == "kan":
+                hand.daiminkan(hai,self.deck)
+            elif cmd == "ron":
+                hand.ron(hai)
+            else:
+                return None
+            return cmd
+
+        def naki_phase(player, nextplayer):
+            if nextplayer.hand.nakipattern(player.sutehai) != []:
+                print("\n\n\n\n" + nextplayer.name)
+                print("sutehai:", player.sutehai.hainame)
+                nextplayer.hand.show_hand()
+                print(nextplayer.hand.nakipattern(player.sutehai))
+                if player.name == "You":
+                    command = str(input())
+                else:
+                    command = str(input())
+                naki_option = nakicmd_check(nextplayer.hand, player.sutehai, command)
+                if naki_option != None:
+                    nextplayer.naki_status = naki_option
+                else:
+                    nextplayer.naki_status = None
+            #鳴き、ロンの処理
+
 
         def trash_phase(player):
             if player.name == "You":
-                command = Command(input())
+                command = Command(str(input()))
                 if command.reach == True:
                     player.reach = True
                     player.hand.yaku.append(Yaku.valueOf("reach"))
-                player.sutehai = Hai.valueAt(command.number)
+                player.sutehai = command.hai
             else:
                 player.sutehai = player.hand.hand[0]
+            print(player.sutehai)
+            input()
             player.hand.tsumohai = -1
             player.river.append(player.sutehai)
             player.hand.trash(player.sutehai)
@@ -483,33 +507,15 @@ class Field():
         if len(player.hand.hand) in [1,4,7]:
             player.hand.tsumo(self.deck)
             player.tsumo = True
-        #player.hand.contents = [3,0,2,0,0,0,0,0,0,0]
         self.show_field()
-
         if hora_check_phase(player):
             return False
-
         trash_phase(player)
-
-        if self.nextplayer.hand.nakipattern(player.sutehai) != []:
-            print("\n\n\n\n" + self.nextplayer.name)
-            print("sutehai:",player.sutehai.hainame)
-            self.nextplayer.hand.show_hand()
-            print(self.nextplayer.hand.nakipattern(player.sutehai))
-            if player.name == "You":
-                command = str(input())
-            else:
-                command = str(input())
-            naki_option = naki_phase(self.nextplayer.hand, player.sutehai, command)
-            if naki_option != None:
-                self.nextplayer.naki_status = naki_option
-            else:
-                self.nextplayer.naki_status = None
+        naki_phase(player, self.nextplayer)
         #鳴き、ロンの処理
 
         if player.kaze.enname == "oya":
             self.turn += 1
-
         return True
 
     def show_field(self):
