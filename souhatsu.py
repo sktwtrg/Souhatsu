@@ -135,6 +135,11 @@ class Kaze(Enum):
         else:
             return self.valueOf("oya")
 
+class Mentsu():
+
+    def __init__(self):
+        pass
+
 
 class Hand():
 
@@ -142,6 +147,7 @@ class Hand():
 
         self.hand = list()
         self.contents = [0]*10
+        self.all_contents = [0]*10
         self.head = int()
         self.mentsu = []
         self.tsumohai = -1
@@ -366,7 +372,7 @@ class Hand():
         self.hand.remove(hai)
         num = str(hai.number)
         num = num + num + num
-        self.furo.append(num)
+        self.furo.append("pon:" + num)
 
     def daiminkan(self, hai, deck):
         self.contents[hai.number] -= 3
@@ -378,7 +384,8 @@ class Hand():
         self.show_hand()
 
     def ankan(self, hai, deck):
-        self.contents[hai.number] -= 3
+        self.contents[hai.number] -= 4
+        self.hand.remove(hai)
         self.hand.remove(hai)
         self.hand.remove(hai)
         self.hand.remove(hai)
@@ -455,7 +462,7 @@ class Field():
         self.previous_winner = None
         while self.onesession():
             self.deck = Deck()
-            self.yourplayer.make_hand(Hand(self.deck, test = [0,0,0,0,1,2,4,4]))
+            self.yourplayer.make_hand(Hand(self.deck, test = [0,0,0,0,7,6,9,9]))
             self.op_player.make_hand(Hand(self.deck, initnum=7, test = [2,2,2,1,1,1,9]))
             self.turn = 1
             self.whos_turn = Kaze.valueOf("oya")
@@ -554,8 +561,9 @@ class Field():
                         return False
                     player.rinshan = False
                     trash_phase(player, deck)
+                else:
+                    player.sutehai = command.hai
 
-                player.sutehai = command.hai
             else:
                 player.sutehai = player.hand.hand[0]
             player.hand.tsumohai = -1
