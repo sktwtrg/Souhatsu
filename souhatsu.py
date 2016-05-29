@@ -504,8 +504,6 @@ class Field():
                 player.sutehai = command.hai
             else:
                 player.sutehai = player.hand.hand[0]
-            print(player.sutehai)
-            input()
             player.hand.tsumohai = -1
             player.river.append(player.sutehai)
             player.hand.trash(player.sutehai)
