@@ -65,6 +65,7 @@ class Yaku(Enum):
     tsumo = (3, "ツモ", "tsumo", 1)
     chitoitsu = (4, "七対子", "chitoitsu", 2) 
     ippatsu = (5, "一発", "ippatsu", 1) 
+    rinshan = (6, "嶺上開花", "rinshan", 1) 
 
     def __init__(self, _id, _name, _enname, _hansu):
         self._id = _id
@@ -137,20 +138,24 @@ class Kaze(Enum):
 
 class Hand():
 
-    def __init__(self, deck, initnum = 8):
+    def __init__(self, deck, initnum = 8, test = None):
+
         self.hand = list()
         self.contents = [0]*10
-        for i in range(initnum):
-            tsumohai = deck.draw()
-            self.contents[tsumohai.number] += 1
-            self.hand.append(tsumohai)
-            # self.contents[deck.draw()] += 1
         self.head = int()
         self.mentsu = []
         self.tsumohai = -1
         self.ronhai = -1
         self.furo = []
         self.yaku = []
+
+        if test != None:
+            for i in test:
+                self.test_tsumo(i)
+            return
+
+        for i in range(initnum):
+            self.tsumo(deck)
 
     def __len__(self):
         return self.contents.__len__()
@@ -195,6 +200,10 @@ class Hand():
             if player.ippatsu_flag == True:
                 self.yaku.append(Yaku.valueOf("ippatsu"))
 
+        def rinshan(player):
+            if player.rinshan_flag == True:
+                self.yaku.append(Yaku.valueOf("rinshan"))
+
         contents = list(self.contents)
         hand = list(self.hand)
         reach(player)
@@ -204,6 +213,7 @@ class Hand():
         ippatsu(player)
         self.show_hand()
         print(self.yaku)
+        print(self.mentsu)
 
 
     def hora_flag(self,contents):
@@ -224,6 +234,7 @@ class Hand():
                 self.mentsu.append(0)
                 if mentsu_check(check_contents,count+1):
                     return True
+                del self.mentsu[-1]
 
             for i in range(1,10):
                 if check_contents[i] >= 3:
@@ -231,6 +242,7 @@ class Hand():
                     self.mentsu.append(i)
                     if mentsu_check(check_contents, count+1):
                         return True
+                    del self.mentsu[-1]
                 elif i >= 8:
                     continue
                 elif check_contents[i] > 0 and check_contents[i+1] > 0 and check_contents[i+2] > 0:
@@ -240,13 +252,13 @@ class Hand():
                     self.mentsu.append(10+i)
                     if mentsu_check(check_contents, count+1):
                         return True
+                    del self.mentsu[-1]
             else:
-                self.mentsu = []
                 return False
 
 #        print(contents)
         if chitoitsu_check(contents):
-            self.yaku.append(Yaku.valueOf("chitoitsu"))
+            self.mentsu.append("chitoitsu")
             return True
 
         for i, number in enumerate(contents):
@@ -325,6 +337,11 @@ class Hand():
         self.tsumohai = deck.draw()
         self.hand.append(self.tsumohai)
         self.contents[self.tsumohai.number] += 1
+        
+    def test_tsumo(self, number):
+        self.tsumohai = Hai.valueAt(number)
+        self.hand.append(self.tsumohai)
+        self.contents[number] += 1
 
     def nakipattern(self, hai):
         def pon_check(hai):
@@ -355,7 +372,17 @@ class Hand():
         self.hand.remove(hai)
         self.hand.remove(hai)
         self.tsumo(deck)
-        self.furo.append(hai.number)
+        self.furo.append("daiminkan:" + str(hai.number)*4)
+        self.show_hand()
+
+    def ankan(self, hai, deck):
+        self.contents[hai.number] -= 3
+        self.hand.remove(hai)
+        self.hand.remove(hai)
+        self.hand.remove(hai)
+        self.tsumo(deck)
+        self.furo.append("ankan:" + str(hai.number)*4)
+        self.show_hand()
 
     def ron(self, hai):
         self.ronhai = hai
@@ -389,6 +416,7 @@ class Player():
         self.reach = False
         self.tsumo = False
         self.ron = False
+        self.rinshan = False
         self.naki_status = None
         self.ippatsu_flag = False
 
@@ -425,8 +453,8 @@ class Field():
         self.previous_winner = None
         while self.onesession():
             self.deck = Deck()
-            self.yourplayer.make_hand(Hand(self.deck))
-            self.op_player.make_hand(Hand(self.deck, initnum=7))
+            self.yourplayer.make_hand(Hand(self.deck, test = [0,0,0,0,1,2,4,4]))
+            self.op_player.make_hand(Hand(self.deck, initnum=7, test = [2,2,2,1,1,1,9]))
             self.turn = 1
             self.whos_turn = Kaze.valueOf("oya")
             self.who_priority()
@@ -473,13 +501,18 @@ class Field():
                 player.ron = False
                 return False
 
-        def nakicmd_check(hand,hai,cmd):
+        def naki_process(player,hai,cmd):
             if cmd == "pon":
-                hand.pon(hai)
+                player.hand.pon(hai)
             elif cmd == "kan":
-                hand.daiminkan(hai,self.deck)
+                player.hand.daiminkan(hai,self.deck)
+                if hora_check_phase(player):
+                    return False
+                player.rinshan = False
+                trash_phase(player, self.deck)
+
             elif cmd == "ron":
-                hand.ron(hai)
+                player.hand.ron(hai)
             else:
                 return None
             return cmd
@@ -494,7 +527,7 @@ class Field():
                     command = str(input())
                 else:
                     command = str(input())
-                naki_option = nakicmd_check(nextplayer.hand, player.sutehai, command)
+                naki_option = naki_process(nextplayer, player.sutehai, command)
                 if naki_option != None:
                     nextplayer.naki_status = naki_option
                     player.ippatsu_flag = False
@@ -503,7 +536,7 @@ class Field():
             #鳴き、ロンの処理
 
 
-        def trash_phase(player):
+        def trash_phase(player, deck):
             if player.name == "You":
                 print("PUT COMMAND")
                 command = Command(str(input()))
@@ -512,6 +545,14 @@ class Field():
                     player.ippatsu_flag = True
                 else: 
                     player.ippatsu_flag = False
+                if command.kan == True:
+                    player.rinshan = True
+                    player.hand.ankan(command.hai, deck)
+                    if hora_check_phase(player):
+                        return False
+                    player.rinshan = False
+                    trash_phase(player, deck)
+
                 player.sutehai = command.hai
             else:
                 player.sutehai = player.hand.hand[0]
@@ -521,6 +562,16 @@ class Field():
             #川に切る処理
 
             player.naki_status = None
+
+        def ryukyoku_check(deck):
+            if deck.deck == []:
+                return True
+
+        def ryukyoku_process():
+            #親を変える
+            #罰符
+            pass
+
 
         #playerの更新
         self.nextplayer, self.thisplayer = self.thisplayer, self.nextplayer
@@ -533,9 +584,13 @@ class Field():
         self.show_field()
         if hora_check_phase(player):
             return False
-        trash_phase(player)
+        trash_phase(player, self.deck)
         naki_phase(player, self.nextplayer)
         #鳴き、ロンの処理
+
+        if ryukyoku_check(self.deck):
+            ryukyoku_process()
+            return False
 
         if player.kaze.enname == "oya":
             self.turn += 1
