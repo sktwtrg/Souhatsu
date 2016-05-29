@@ -392,23 +392,34 @@ class Hand():
         self.furo.append("pon:" + num)
 
     def daiminkan(self, hai, deck):
-        self.contents[hai.number] -= 3
-        self.hand.remove(hai)
-        self.hand.remove(hai)
-        self.hand.remove(hai)
+        self.hand.append(hai)
+        num = hai.number
+        self.contents[num] -= 4
+        block_hais = []
+        for i in range(4):
+            for hai in self.hand:
+                if hai.number != num:
+                    continue
+                self.hand.remove(hai)
+                block_hais.append(hai)
+                break
         self.tsumo(deck)
-        block = Block([hai] * 4, block_type = "daiminkan")
+        block = Block(block_hais, block_type = "daiminkan")
         self.furo.append(block)
         self.show_hand()
 
-    def ankan(self, hai, deck):
-        self.contents[hai.number] -= 4
-        self.hand.remove(hai)
-        self.hand.remove(hai)
-        self.hand.remove(hai)
-        self.hand.remove(hai)
+    def ankan(self, num, deck):
+        self.contents[num] -= 4
+        block_hais = []
+        for i in range(4):
+            for hai in self.hand:
+                if hai.number != num:
+                    continue
+                self.hand.remove(hai)
+                block_hais.append(hai)
+                break
         self.tsumo(deck)
-        block = Block([hai] * 4, block_type = "daiminkan")
+        block = Block(block_hais, block_type = "ankan")
         self.furo.append(block)
         self.show_hand()
 
@@ -481,7 +492,7 @@ class Field():
         self.previous_winner = None
         while self.onesession():
             self.deck = Deck()
-            self.yourplayer.make_hand(Hand(self.deck, test = [0,0,0,0,9,6,9,9]))
+            self.yourplayer.make_hand(Hand(self.deck, test = [5,5,5,10,9,6,9,1]))
             self.op_player.make_hand(Hand(self.deck, initnum=7, test = [2,2,2,1,1,1,9]))
             self.turn = 1
             self.whos_turn = Kaze.valueOf("oya")
@@ -575,7 +586,7 @@ class Field():
                     player.ippatsu_flag = False
                 if command.kan == True:
                     player.rinshan = True
-                    player.hand.ankan(command.hai, deck)
+                    player.hand.ankan(command.number, deck)
                     if hora_check_phase(player):
                         return True
                     player.rinshan = False
