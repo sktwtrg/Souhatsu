@@ -536,7 +536,7 @@ class Field():
         print("\n\n\n\n----------------------")
         print(self.thisplayer.name + " Turn")
         print("----------------------")
-        print(self.op_player.name + " Hand")
+        print(self.op_player.name + " Hand" + "score:" + str(self.op_player.score))
         self.op_player.hand.show_hand()
         print("\n\n")
         if self.op_player.reach == True:
@@ -550,7 +550,7 @@ class Field():
         if self.yourplayer.reach == True:
             print("\nREACH!!")
         print("\n\n\n")
-        print(self.yourplayer.name + " Hand")
+        print(self.yourplayer.name + " Hand" + " score:" + str(self.yourplayer.score))
         self.yourplayer.hand.show_hand()
         print("----------------------")
 
