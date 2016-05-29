@@ -152,10 +152,12 @@ class Hand():
         if test != None:
             for i in test:
                 self.test_tsumo(i)
+            self.tsumohai = -1
             return
 
         for i in range(initnum):
             self.tsumo(deck)
+        self.tsumohai = -1
 
     def __len__(self):
         return self.contents.__len__()
