@@ -239,6 +239,7 @@ class Hand():
 
 
     def hora_flag(self,contents):
+        self.mentsu = []
 
         def chitoitsu_check(contents):
             toitsu_num = 0
@@ -251,6 +252,7 @@ class Hand():
         def mentsu_check(check_contents, count):
             if check_contents == [0]*10:
                 return True
+            #TODO:change this
             mentsu_hais = []
             if check_contents[0] >= 3:
                 check_contents[0] -= 3
@@ -290,6 +292,7 @@ class Hand():
 
 #        print(contents)
         if chitoitsu_check(contents):
+            #TODO:change this
             self.mentsu.append("chitoitsu")
             return True
 
@@ -301,15 +304,15 @@ class Hand():
                 if mentsu_check(contents_check, 0):
                     return True
         else:
-                self.yaku = []
-                return False
+            self.yaku = []
+            self.mentsu = []
+            return False
 
 
     def tenpai_flag(self):
 #        hand = copy.deepcopy(self)
         contents = self.contents
         matihais = []
-        print(contents)
         if len(self.hand) in [2, 5, 8]:
             for i in range(10):
                 contents_reduced = self.contents[:]
@@ -324,7 +327,6 @@ class Hand():
                         matihais.append(i)
                         break
             if matihais != []:
-                print(matihais)
                 return True
             else:
                 return False
@@ -543,6 +545,7 @@ class Field():
         def hora_check_phase(player):
             if player.hand.hora_flag(player.hand.contents)\
                     and player.naki_status in [None, "ron"]:
+                print()
                 player.hand.hora_process(player)
                 self.previous_winner = player
                 player.score += 1
