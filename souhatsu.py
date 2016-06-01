@@ -545,6 +545,13 @@ class Field():
         def hora_check_phase(player):
             if player.hand.hora_flag(player.hand.contents)\
                     and player.naki_status in [None, "ron"]:
+                if player.naki_status == None:
+                    print("You Tsumo?")
+                    cmd = input()
+                    if cmd != 't':
+                        player.tsumo = True
+                        return False
+                print("")
                 print()
                 player.hand.hora_process(player)
                 self.previous_winner = player
