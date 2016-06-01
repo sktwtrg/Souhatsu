@@ -100,6 +100,7 @@ class Yaku(Enum):
     def hansu(self):
         return self._hansu
 
+
 class Kaze(Enum):
 
     oya = (0, "親", "oya")
@@ -444,6 +445,7 @@ class Hand():
         self.contents[hai.number] += 1
         self.hand.append(hai)
 
+
 class Deck():
 
     def __init__(self):
@@ -634,7 +636,10 @@ class Field():
         def ryukyoku_process():
             #親を変える
             #罰符
-            pass
+            if self.yourplayer.kaze.enname == 'oya':
+                self.previous_winner = self.op_player
+            else:
+                self.previous_winner = self.yourplayer
 
 
         #playerの更新
