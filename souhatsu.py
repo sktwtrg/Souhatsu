@@ -417,7 +417,7 @@ class Hand():
     def daiminkan(self, hai, deck):
         self.hand.append(hai)
         num = hai.number
-        self.contents[num] -= 4
+        self.contents[num] -= 3
         block_hais = []
         for i in range(4):
             for hai in self.hand:
@@ -426,7 +426,6 @@ class Hand():
                 self.hand.remove(hai)
                 block_hais.append(hai)
                 break
-        self.tsumo(deck)
         block = Block(block_hais, block_type = "daiminkan")
         self.furo.append(block)
         self.show_hand()
@@ -624,6 +623,10 @@ class Command():
         elif cmd == "tsumo":
             pass
 
+    def candidate(self):
+
+        pass
+
 
 class Field():
 
@@ -634,8 +637,8 @@ class Field():
         self.previous_winner = None
         while self.onesession():
             self.deck = Deck()
-            self.yourplayer.make_hand(Hand(self.deck, test = [5,5,5,10,9,9,9,9]))
-            self.op_player.make_hand(Hand(self.deck, initnum=7, test = [2,2,2,1,1,1,9]))
+            self.yourplayer.make_hand(Hand(self.deck, test = [2,5,5,10,9,9,9,9]))
+            self.op_player.make_hand(Hand(self.deck, initnum=7, test = [2,2,2,4,4,4,5]))
             self.turn = 1
             self.whos_turn = Kaze.valueOf("oya")
             self.who_priority()
@@ -670,13 +673,15 @@ class Field():
             pass
 
         def hora_check_phase(player):
+            print("!!!!!"+str(player.naki_status))
+            print(player.hand.contents)
             if player.hand.hora_flag(player.hand.contents)\
-                    and player.naki_status in [None, "ron"]:
-                if player.naki_status == None:
+                    and player.naki_status in [None, "ron", 'kan']:
+                print("why?")
+                if player.naki_status in  [None, 'kan']:
                     print("You Tsumo?")
                     cmd = input()
                     if cmd != 't':
-                        player.tsumo = True
                         return False
                 print("")
                 print()
@@ -687,8 +692,6 @@ class Field():
                 print(player.score)
                 return True
             else:
-                player.tsumo = True
-                player.ron = False
                 return False
 
         def naki_process(player,hai,cmd):
@@ -696,10 +699,7 @@ class Field():
                 player.hand.pon(hai)
             elif cmd == "kan":
                 player.hand.daiminkan(hai,self.deck)
-                if hora_check_phase(player):
-                    return False
-                player.rinshan = False
-                trash_phase(player, self.deck)
+                player.rinshan = True
 
             elif cmd == "ron":
                 player.hand.ron(hai)
@@ -723,6 +723,7 @@ class Field():
                     player.ippatsu_flag = False
                 else:
                     nextplayer.naki_status = None
+                    nextplayer.tsumo = True
             #鳴き、ロンの処理
 
 
@@ -739,10 +740,10 @@ class Field():
                     player.rinshan = True
                     player.hand.ankan(command.number, deck)
                     if hora_check_phase(player):
-                        return True
+                        return False
                     player.rinshan = False
                     trash_phase(player, deck)
-                    return
+                    return True
                 else:
                     player.sutehai = command.hai
 
@@ -754,6 +755,7 @@ class Field():
             #川に切る処理
 
             player.naki_status = None
+            return True
 
         def ryukyoku_check(deck):
             if deck.deck == []:
@@ -775,11 +777,10 @@ class Field():
         #tsumo
         if len(player.hand.hand) in [1,4,7]:
             player.hand.tsumo(self.deck)
-            player.tsumo = True
         self.show_field()
         if hora_check_phase(player):
             return False
-        if trash_phase(player, self.deck):
+        if not trash_phase(player, self.deck):
             #嶺上開花の時のみ終わる
             return False
         naki_phase(player, self.nextplayer)
