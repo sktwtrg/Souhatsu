@@ -603,18 +603,25 @@ class Player():
 
 class Command():
     
-    def __init__(self,cmd):
+    def __init__(self,cmd,player):
+
+        if len(cmd) == 0: 
+            self.state = False
+            return
 
         if "5r" in cmd:
             self.reach  = False
             self.number = int(5)
             self.kan = False
             self.hai = Hai.valueAt(10)
-        else:
+        elif cmd[-1] in [str(x) for x in range(9)]:
             self.reach = False
             self.number = int(cmd[-1])
             self.kan = False
             self.hai = Hai.valueAt(self.number)
+        else:
+            self.state = False
+            return 
 
         if cmd[0] == "r":
             self.reach = True
@@ -622,10 +629,17 @@ class Command():
             self.kan = True
         elif cmd == "tsumo":
             pass
+        self.state =  self.candidate(player)
 
-    def candidate(self):
+    def candidate(self, player):
 
-        pass
+        if self.hai not in player.hand.hand:
+            return False
+        if self.kan == True and player.hand.contents[self.number] < 4:
+            return False
+        if self.reach == True and False:
+            return False
+        return True
 
 
 class Field():
@@ -673,16 +687,20 @@ class Field():
             pass
 
         def hora_check_phase(player):
-            print("!!!!!"+str(player.naki_status))
-            print(player.hand.contents)
             if player.hand.hora_flag(player.hand.contents)\
                     and player.naki_status in [None, "ron", 'kan']:
-                print("why?")
                 if player.naki_status in  [None, 'kan']:
-                    print("You Tsumo?")
-                    cmd = input()
-                    if cmd != 't':
-                        return False
+                    while True:
+                        print("You Tsumo?")
+                        cmd = input()
+                        if cmd == 'y':
+                            break
+                        elif cmd == 'n':
+                            return False
+                        else:
+                            pass
+
+
                 print("")
                 print()
                 player.hand.yaku_check(player)
@@ -730,7 +748,9 @@ class Field():
         def trash_phase(player, deck):
             if player.name == "You":
                 print("PUT COMMAND")
-                command = Command(str(input()))
+                command = Command(str(input()), player)
+                while not command.state:
+                    command = Command(str(input()), player)
                 if command.reach == True:
                     player.reach = True
                     player.ippatsu_flag = True
