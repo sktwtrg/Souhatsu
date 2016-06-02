@@ -155,7 +155,6 @@ class Hand():
 
         self.hand = list()
         self.contents = [0]*10
-        self.all_contents = [0]*10
         self.head = int()
         self.mentsu = []
         self.tsumohai = -1
@@ -191,8 +190,8 @@ class Hand():
     def append(self, item):
         return self.contents.append(item)
 
-    def hora_process(self,player):
-
+    def yaku_check(self, player):
+        self.yaku = []
         def reach(player):
             if player.reach == True:
                 self.yaku.append(Yaku.valueOf("reach"))
@@ -216,8 +215,12 @@ class Hand():
             if player.ippatsu_flag == True:
                 self.yaku.append(Yaku.valueOf("ippatsu"))
 
+        def chitoitsu():
+            if self.mentsu[0] == 'chitoitsu':
+                self.yaku.append(Yaku.valueOf("chitoitsu"))
+
         def rinshan(player):
-            if player.rinshan_flag == True:
+            if player.rinshan == True:
                 self.yaku.append(Yaku.valueOf("rinshan"))
 
         contents = list(self.contents)
@@ -227,6 +230,10 @@ class Hand():
         tannyao(contents)
         tsumo()
         ippatsu(player)
+        chitoitsu()
+        rinshan(player)
+
+    def hora_process(self,player):
         self.show_hand()
         print(player.name + " hora!")
         print("役:",end="")
@@ -446,6 +453,124 @@ class Hand():
         self.hand.append(hai)
 
 
+class Hand_Analyzer():
+
+    def __init__(hand):
+        self.hand = hand.hand
+        self.contents = hand.contents
+        self.mentsu = []
+        self.tsumohai = hand.tsumohai
+        self.ronhai = hand.ronhai
+        self.head = hand.head
+        self.shanten = -1
+        
+    def hora_flag(self,contents):
+        def chitoitsu_check(contents):
+            toitsu_num = 0
+            for num in contents:
+                if num == 2:
+                    toitsu_num += 1
+                if toitsu_num == 4:
+                    return True
+
+        def mentsu_check(check_contents, count):
+            if check_contents == [0]*10:
+                return True
+            #TODO:change this
+            mentsu_hais = []
+            if check_contents[0] >= 3:
+                check_contents[0] -= 3
+                mentsu_hais.append(Hai.valueAt(0))
+                mentsu_hais.append(Hai.valueAt(0))
+                mentsu_hais.append(Hai.valueAt(0))
+                self.mentsu.append(Block(mentsu_hais, block_type = "anko"))
+                if mentsu_check(check_contents,count+1):
+                    return True
+                del self.mentsu[-1]
+
+            for i in range(1,10):
+                if check_contents[i] >= 3:
+                    check_contents[i] -= 3
+                    mentsu_hais.append(Hai.valueAt(i))
+                    mentsu_hais.append(Hai.valueAt(i))
+                    mentsu_hais.append(Hai.valueAt(i))
+                    self.mentsu.append(Block(mentsu_hais, block_type = "anko"))
+                    if mentsu_check(check_contents, count+1):
+                        return True
+                    del self.mentsu[-1]
+                elif i >= 8:
+                    continue
+                elif check_contents[i] > 0 and check_contents[i+1] > 0 and check_contents[i+2] > 0:
+                    check_contents[i] -= 1
+                    check_contents[i+1] -= 1
+                    check_contents[i+2] -= 1
+                    mentsu_hais.append(Hai.valueAt(i))
+                    mentsu_hais.append(Hai.valueAt(i+1))
+                    mentsu_hais.append(Hai.valueAt(i+2))
+                    self.mentsu.append(Block(mentsu_hais, block_type = "shuntsu"))
+                    if mentsu_check(check_contents, count+1):
+                        return True
+                    del self.mentsu[-1]
+            else:
+                return False
+
+#        print(contents)
+        if chitoitsu_check(contents):
+            #TODO:change this
+            self.mentsu.append("chitoitsu")
+            return True
+
+        for i, number in enumerate(contents):
+            contents_check = list(contents)[:]
+            if contents_check[i] >= 2:
+                contents_check[i] -= 2
+                self.head = Block([Hai.valueAt(i)]*2, block_type = "head")
+                if mentsu_check(contents_check, 0):
+                    return True
+        else:
+            self.yaku = []
+            self.mentsu = []
+            return False
+
+    def yaku_check(self, player):
+
+        def reach(player):
+            if player.reach == True:
+                self.yaku.append(Yaku.valueOf("reach"))
+
+        def yakuhai(contents):
+            if self.contents[0] == 3\
+                    or 0 in self.furo:
+                self.yaku.append(Yaku.valueOf("yaku"))
+
+        def tannyao(contents):
+            if contents[0] == 0 \
+                    and contents[1] == 0 \
+                    and contents[9] == 0:
+                self.yaku.append(Yaku.valueOf("tannyao"))
+
+        def tsumo():
+            if self.ronhai == -1 and self.furo == []:
+                self.yaku.append(Yaku.valueOf("tsumo"))
+
+        def ippatsu(player):
+            if player.ippatsu_flag == True:
+                self.yaku.append(Yaku.valueOf("ippatsu"))
+
+        def rinshan(player):
+            if player.rinshan_flag == True:
+                self.yaku.append(Yaku.valueOf("rinshan"))
+
+        contents = list(self.contents)
+        hand = list(self.hand)
+        reach(player)
+        yakuhai(contents)
+        tannyao(contents)
+        tsumo()
+        ippatsu(player)
+        self.show_hand()
+
+
 class Deck():
 
     def __init__(self):
@@ -555,6 +680,7 @@ class Field():
                         return False
                 print("")
                 print()
+                player.hand.yaku_check(player)
                 player.hand.hora_process(player)
                 self.previous_winner = player
                 player.score += 1
