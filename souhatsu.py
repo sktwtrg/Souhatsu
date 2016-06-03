@@ -614,7 +614,7 @@ class Command():
             self.number = int(5)
             self.kan = False
             self.hai = Hai.valueAt(10)
-        elif cmd[-1] in [str(x) for x in range(9)]:
+        elif cmd[-1] in [str(x) for x in range(10)]:
             self.reach = False
             self.number = int(cmd[-1])
             self.kan = False
