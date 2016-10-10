@@ -97,6 +97,12 @@ class SoftwareRenderer(sdl2ext.SoftwareSpriteRenderSystem):
         rect_tes1 = rect.SDL_Rect(0,0,800,600)
         super(SoftwareRenderer, self).render(components)
 
+class TenbouEntity(sdl2ext.Entity):
+
+    def __init__(self, world, sprite, posx=0, posy=0):
+        self.sprite = sprite
+        self.sprite.position = posx, posy
+
 class TextBoxEntity(sdl2ext.Entity):
 
     def __init__(self, world, sprite, textbox, posx=0, posy=0):
@@ -154,6 +160,7 @@ class TextBox(Enum):
     PON = ('pon', (80, 50), (110, 480), './pai-images/pon.png')
     KAN = ('kan', (80, 50), (195, 480), './pai-images/kan.png')
     RON = ('ron', (80, 50), (280, 480), './pai-images/ron.png')
+    REACH = ('reach', (80, 50), (280, 480), './pai-images/reach.png')
 
     def __init__(self, _name, _size, _position, _img_path):
         self._name = _name
@@ -258,6 +265,8 @@ class Yaku(Enum):
     chitoitsu = (4, "七対子", "chitoitsu", 2) 
     ippatsu = (5, "一発", "ippatsu", 1) 
     rinshan = (6, "嶺上開花", "rinshan", 1) 
+    pinfu = (7, "平和", "pinfu", 1) 
+    ryuiso = (8, "緑一色", "ryuiso", -1) 
 
     def __init__(self, _id, _name, _enname, _hansu):
         self._id = _id
@@ -378,6 +387,8 @@ class Block:
                 self.fu = 32
         elif self.type == 'head':
             if self.numbers[0] == 0: self.fu = 2
+        elif self.type == 'chitoitsu':
+            self.fu = 25
 
 
 
@@ -385,10 +396,12 @@ class Hand:
 
     hai_size = (40, 60)
 
-    def __init__(self, deck, player, world, factory, initnum = 8, test = None):
+    def __init__(self, deck, player, world, factory, movement, initnum = 8, test = None):
 
         self.player = player
         self.world = world
+        self.factory = factory
+        self.movement = movement
         self.hand = list()
         self.entities = list()
         self.contents = [0]*10
@@ -409,20 +422,12 @@ class Hand:
         if test != None:
             for i in test:
                 self.test_tsumo(i)
-            self.tsumohai = -1
-            for j, hai in enumerate(self.hand):
-                img_pil = Image.open(hai.img_path)
-                img_pil = img_pil.resize(self.hai_size)
-                img_surface = pilSurface(img_pil)
-                entity = HaiEntity(world, factory.from_surface(img_surface.contents), hai, self.player.hand_pos[0] + 41 * j, self.player.hand_pos[1])
-                self.entities.append(entity)
-                self.world.hai_entities.append(entity)
             return
 
 
         for i in range(initnum):
             self.tsumo(deck)
-        self.tsumohai = -1
+        return
 
     def __len__(self):
         return self.contents.__len__()
@@ -443,7 +448,8 @@ class Hand:
         return self.contents.append(item)
 
     def machi_type_check(self):
-        if self.agarihai.number in self.head.numbers:
+        if self.agarihai.number in self.head.numbers or\
+                self.mentsu[0].type == 'chitoitsu' :
             self.machi_type_candidate.append('tanki')
             self.machi_type= 'tanki'
 
@@ -488,8 +494,18 @@ class Hand:
                 self.yaku.append(Yaku.valueOf("tannyao"))
 
         def pinfu():
-            for block in mentsu:
-                pass
+            if not self.mensen:
+                return
+
+            if 'ryanmen' not in self.machi_type_candidate:
+                return
+            for block in self.mentsu:
+                if block.fu != 0:
+                    return
+            if self.head.fu != 0:
+                return
+            self.yaku.append(Yaku.valueOf("pinfu"))
+
 
         def tsumo():
             if self.ronhai == -1 \
@@ -501,12 +517,19 @@ class Hand:
                 self.yaku.append(Yaku.valueOf("ippatsu"))
 
         def chitoitsu():
-            if self.mentsu[0] == 'chitoitsu':
+            if self.mentsu[0].type == 'chitoitsu':
                 self.yaku.append(Yaku.valueOf("chitoitsu"))
 
         def rinshan(player):
             if player.rinshan == True:
                 self.yaku.append(Yaku.valueOf("rinshan"))
+
+        def ryuiso():
+            for hai in self.hand:
+                if not hai.is_ryuhai:
+                    break
+            else:
+                self.yaku.append(Yaku.valueOf("ryuiso"))
 
         hand = list(self.hand)
         reach(player)
@@ -516,6 +539,8 @@ class Hand:
         ippatsu(player)
         chitoitsu()
         rinshan(player)
+        ryuiso()
+        pinfu()
 
         for yaku in self.yaku:
             self.hansu += yaku.hansu
@@ -623,8 +648,9 @@ class Hand:
 
 #        print(contents)
         if chitoitsu_check(contents):
-            #TODO:change this
-            self.mentsu.append("chitoitsu")
+            #TODO:チートイツのブロックは0とする
+            block = Block([Hai.valueAt(0)], block_type = "chitoitsu")
+            self.mentsu.append(block)
             return True
 
         for i, number in enumerate(contents):
@@ -702,16 +728,40 @@ class Hand:
         self[hai.number] -= 1
         self.hand.remove(hai)
 
-    def tsumo(self, deck, world):
+    def tsumo(self, deck):
         self.tsumohai = deck.draw()
         self.hand.append(self.tsumohai)
         self.contents[self.tsumohai.number] += 1
+
+        #TODO:ここを関数化
+        img_pil = Image.open(self.tsumohai.img_path)
+        img_pil = img_pil.resize(Hand.hai_size)
+        img_surface = pilSurface(img_pil)
+        entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
+
+        self.movement.hais.append(entity) 
+        self.entities.append(entity)
+        self.world.hai_entities.append(entity)
+        self.world.process()
+            #TODO:ここまでなんとかする
         return self.tsumohai
         
     def test_tsumo(self, number):
         self.tsumohai = Hai.valueAt(number)
         self.hand.append(self.tsumohai)
         self.contents[self.tsumohai.number] += 1
+
+        #TODO:ここを関数化
+        img_pil = Image.open(self.tsumohai.img_path)
+        img_pil = img_pil.resize(Hand.hai_size)
+        img_surface = pilSurface(img_pil)
+        entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
+
+        self.movement.hais.append(entity) 
+        self.entities.append(entity)
+        self.world.hai_entities.append(entity)
+        self.world.process()
+            #TODO:ここまでなんとかする
 
     def nakipattern(self, hai):
         def pon_check(hai):
@@ -748,7 +798,6 @@ class Hand:
                 block_hais.append(entity.hai)
                 block_entities.append(entity)
                 break
-        print(block_hais)
         block = Block(block_hais, block_type = "minko")
         block.set_entities(block_entities)
         self.pon_move(block_entities)
@@ -799,17 +848,31 @@ class Hand:
     def ankan(self, num, deck):
         self.contents[num] -= 4
         block_hais = []
+        block_entities = []
         for i in range(4):
-            for hai in self.hand:
-                if hai.number != num:
+            for entity in self.entities:
+                if entity.hai.number != num:
                     continue
-                self.hand.remove(hai)
-                block_hais.append(hai)
+                self.hand.remove(entity.hai)
+                self.entities.remove(entity)
+                block_hais.append(entity.hai)
+                block_entities.append(entity)
                 break
         self.tsumo(deck)
         block = Block(block_hais, block_type = "ankan")
+        block.set_entities(block_entities)
+        self.ankan_move(block_entities)
         self.furo.append(block)
         self.show_hand()
+        self.world.process()
+
+    def ankan_move(self, entities):
+        position = (self.player.hand_pos[0] + (len(self.player.hand.hand) + 1) * self.hai_size[0] + 20, self.player.hand_pos[1])
+        entities[0].move(position[0], position[1])
+        entities[1].move(position[0] + self.hai_size[0], position[1])
+        entities[2].move(position[0] + self.hai_size[0] * 2 , position[1])
+        entities[3].move(position[0] + self.hai_size[0] * 3 , position[1])
+        self.rihai_move()
 
     def ron(self, entity):
         self.ronhai = entity.hai
@@ -858,12 +921,35 @@ class Player:
         self.naki_status = None
         self.ippatsu_flag = False
 
+    def reach_move(self, factory, world):
+        #TODO:ここを関数化
+        img_pil = Image.open('./pai-images/tennbou-001.png')
+        img_pil = img_pil.transpose(Image.ROTATE_90)
+        img_pil = img_pil.resize((150,7))
+
+        img_surface = pilSurface(img_pil)
+        entity = TenbouEntity(world, factory.from_surface(img_surface.contents), self.river_pos[0] + 60, self.river_pos[1] - 15)
+
+        self.ribou = entity
+        #TODO:world.hai_entitiesに入れる?
+        world.hai_entities.append(entity)
+        world.process()
+        #TODO:ここまでなんとかする
 
 class Command:
     
-    def __init__(self, cmd, player, river, gui = False, world = None):
+    def __init__(self, cmd, player, river, gui = False, textbox_manager = None, world = None):
+        self.reach  = False
+        self.number = None
+        self.kan = False
+        self.hai = None
+        self.state = False
+
         if gui:
-            self.gui_trash_parse(player, river, world)
+            self.textbox_manager = textbox_manager
+            self.world = world
+            self.river = river
+            self.gui_trash_parse(player)
             return
 
         if len(cmd) == 0: 
@@ -902,12 +988,31 @@ class Command:
             return False
         return True
 
-    def gui_trash_parse(self, player, river, world):
+    def gui_trash_parse(self, player):
         self.reach = False
         self.kan = False
         self.state = True
+        self.button_names = []
+        if not player.reach and \
+                player.hand.furo == []:
+            self.textbox_manager.make_button('reach')
+            self.button_names.append('reach')
+
+        if 4 in player.hand.contents:
+            self.textbox_manager.make_button('kan')
+            self.button_names.append('kan')
+        self.world.process()
         while True:
             events = sdl2ext.get_events()
+            if (player.reach and\
+                    self.hai == player.hand.tsumohai) or \
+                    ((not player.reach)and\
+                    self.number != None):
+                for button_name in self.button_names:
+                    self.textbox_manager.del_button(button_name)
+                self.world.process()
+                break
+
             for event in events:
                 if event.type == SDL_QUIT:
                     running = False
@@ -923,21 +1028,20 @@ class Command:
                 elif event.type == SDL_MOUSEBUTTONDOWN:
                     for i, hai in enumerate(player.hand.entities):
                         if sprite_mouse_overlap(hai.sprite, event.button):
-                            hai.move(player.river_pos[0] + len(river) * 41, player.river_pos[1])
                             self.hai = hai.hai
                             self.hai_entity = hai
+                            self.number = self.hai.number
 
-                            #TODO:臨時でこう
-#                            river.append(1)
-                            player.river_entities.append(hai)
-                            player.hand.entities.pop(i)
+#TODO:カンとリーチどっちもできてしまう
+                    for button_name in self.button_names:
+                        if sprite_mouse_overlap(self.textbox_manager.entity_dict[button_name].sprite, event.button):
+                            if button_name == 'reach':
+                                self.reach = not self.reach
+                            elif button_name == 'kan':
+                                self.kan = not self.kan
 
-                            for j in range(i,len(player.hand.entities)):
-                                player.hand.entities[j].move(player.hand.entities[j].sprite.x - 41 , player.hand_pos[1])
-                            world.process()
-                            return
             SDL_Delay(10)
-            world.process()
+            self.world.process()
 
 class NakiCommand:
     
@@ -950,7 +1054,7 @@ class NakiCommand:
             self.textbox_manager.make_button(pattern)
         self.buttons = self.textbox_manager.entity_dict.values()
         self.button_names = list(self.textbox_manager.entity_dict.keys())
-        world.process()
+        self.world.process()
 
         while True:
             events = sdl2ext.get_events()
@@ -958,21 +1062,8 @@ class NakiCommand:
                 if event.type == SDL_QUIT:
                     running = False
                     break
-                elif event.type == SDL_MOUSEMOTION:
-                    continue
-
-                    #TODO:ちゃんと消す
-                    for hai in player.hand.entities:
-                        if hai.sprite.y < 440:
-                            continue
-                        elif (hai.sprite.x < event.motion.x < hai.sprite.x + hai.sprite.size[0]) and (hai.sprite.y < event.motion.y < hai.sprite.y + hai.sprite.size[1]):
-                            hai.velocity.vy = -1
-                        else:
-                            hai.velocity.vy = 1
                 elif event.type == SDL_MOUSEBUTTONDOWN:
                     for i, button in enumerate(self.buttons):
-                        print(button)
-                        print(button.sprite)
                         if sprite_mouse_overlap(button.sprite, event.button):
                             self.command = button.textbox.name
                         else:
@@ -991,7 +1082,7 @@ class Field:
     def __init__(self):
         
         sdl2ext.init()
-        self.window = sdl2ext.Window("The Pong Game", size=(800, 600))
+        self.window = sdl2ext.Window("Souhatsu", size=(800, 600))
         self.window.show()
 #        self.world = sdl2ext.World()
         self.world = World()
@@ -1012,16 +1103,30 @@ class Field:
         while self.onesession():
             self.movement.hais = []
             self.deck = Deck()
-            self.yourplayer.make_hand(Hand(self.deck, self.yourplayer, self.world, self.factory, test = [2,5,5,10,9,9,9,9]))
-            self.op_player.make_hand(Hand(self.deck, self.op_player, self.world, self.factory, initnum=7, test = [2,2,2,4,4,6,5]))
+            self.yourplayer.make_hand(
+                    Hand(
+                        self.deck,
+                        self.yourplayer,
+                        self.world,
+                        self.factory,
+                        self.movement
+                        )
+                    )
+            self.op_player.make_hand(
+                    Hand(
+                        self.deck,
+                        self.op_player,
+                        self.world,
+                        self.factory,
+                        self.movement,
+                        initnum=7
+                        )
+                    )
+#            self.yourplayer.make_hand(Hand(self.deck, self.yourplayer, self.world, self.factory, self.movement, test = [2,5,5,10,9,9,9,9]))
+#            self.op_player.make_hand(Hand(self.deck, self.op_player, self.world, self.factory, self.movement, initnum=7, test = [2,2,2,4,4,6,5]))
             self.movement.hais += self.yourplayer.hand.entities
             self.movement.hais += self.op_player.hand.entities
             
-
-#            self.textbox_manager.make_button('pon')
-#            self.textbox_manager.make_button('ron')
-#            self.textbox_manager.make_button('kan')
-
             self.turn = 1
             self.whos_turn = Kaze.valueOf("oya")
             self.who_priority()
@@ -1031,10 +1136,8 @@ class Field:
                 self.world.process()
                 pass
             print("HAIPAI!!\n")
-            input()
             self.world.del_all()
             self.world.process()
-            input()
 
     def who_priority(self):
 
@@ -1091,9 +1194,10 @@ class Field:
                                 print("")
                                 print()
                                 hora_process(player)
+                                self.textbox_manager.del_button('tsumo')
                                 return True
                             else:
-                                self.world.delete(self.textbox_manager.entity_dict['tsumo'])
+                                self.textbox_manager.del_button('tsumo')
                                 return False
 
 
@@ -1120,7 +1224,6 @@ class Field:
                 print("\n\n\n\n" + self.nextplayer.name)
                 print("sutehai:", self.thisplayer.sutehai.hainame)
                 self.nextplayer.hand.show_hand()
-                print(naki_pattern)
                 if self.thisplayer.name == "You":
 #                    command = str(input())
                     command = NakiCommand(naki_pattern, self.textbox_manager, self.world)
@@ -1148,13 +1251,24 @@ class Field:
             if player.name == "You":
                 print("PUT COMMAND")
 #                command = Command(str(input()), player)
-                command = Command(None, player, player.river, gui = True, world = self.world)
+                command = Command(
+                        None,
+                        player,
+                        player.river,
+                        gui = True,
+                        textbox_manager = self.textbox_manager,
+                        world = self.world
+                        )
+                #gui command.stateはguiの場合常にTrue
                 while not command.state:
-#                    command = Command(str(input()), player)
-                    command = Command(None, player, gui = True)
+                    command = Command(str(input()), player)
                 if command.reach == True:
                     player.reach = True
                     player.ippatsu_flag = True
+                    player.reach_move(
+                            self.factory,
+                            self.world
+                            )
                 else: 
                     player.ippatsu_flag = False
                 if command.kan == True:
@@ -1166,8 +1280,15 @@ class Field:
                     trash_phase(player, deck)
                     return True
                 else:
+                    command.hai_entity.move(player.river_pos[0] \
+                            + len(player.river) * 41,
+                            player.river_pos[1])
+                    player.hand.entities.remove(command.hai_entity)
+                    player.river_entities.append(command.hai_entity)
+                    player.hand.rihai_move()
                     player.sutehai_entity = command.hai_entity
                     player.sutehai = command.hai
+                    self.world.process()
 
             else:
                 player.sutehai_entity = player.hand.entities[0]
@@ -1210,18 +1331,7 @@ class Field:
 
         #tsumo
         if len(player.hand.hand) in [1,4,7]:
-            temp_tsumohai = player.hand.tsumo(self.deck, self.world)
-
-            #TODO:ここを関数化
-            img_pil = Image.open(temp_tsumohai.img_path)
-            img_pil = img_pil.resize(Hand.hai_size)
-            img_surface = pilSurface(img_pil)
-            entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), temp_tsumohai, player.hand_pos[0] + 41 * (len(player.hand.hand) - 1), player.hand_pos[1])
-            self.movement.hais.append(entity) 
-            player.hand.entities.append(entity)
-            self.world.hai_entities.append(entity)
-            self.world.process()
-            #TODO:ここまでなんとかする
+            temp_tsumohai = player.hand.tsumo(self.deck)
 
         self.show_field()
 
