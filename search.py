@@ -146,29 +146,36 @@ print(tenpai_flag2(contents,ordict))
 print(shanten_check(contents2,ordict))
 input()
 
-#haipailist = all_haipai()
-#tenpai_counter = 0
-#ishanten_counter = 0
-#hand2dict = {}
-#for haipai in haipailist:
-#    if tenpai_flag2(haipai,hand2dict):
-#        tenpai_counter += 1
-#for haipai in haipailist:
-#    if shanten_check(haipai,hand2dict):
-#        ishanten_counter += 1
-
-#print(haipailist[0])
-#tenpai_flag(list(haipailist),hand2dict)
+haipailist = all_haipai()
+hora_counter = 0
+tenpai_counter = 0
+ishanten_counter = 0
+hand2dict = {}
+for haipai in haipailist:
+    if hora_flag(haipai):
+        hora_counter += 1
+for haipai in haipailist:
+    if tenpai_flag2(haipai,hand2dict):
+        tenpai_counter += 1
+for haipai in haipailist:
+    if shanten_check(haipai,hand2dict):
+        ishanten_counter += 1
+print(haipailist[0])
+tenpai_flag(list(haipailist),hand2dict)
 #
-#print(tenpai_counter)
-#print(ishanten_counter)
-#print(len(haipailist))
+print('hora_counter')
+print(hora_counter)
+print('hora_counter')
+print(tenpai_counter)
+print('hora_counter')
+print(ishanten_counter)
+print('all')
+print(len(haipailist))
 #print(len(hand2dict))
-#input()
 #for haipai in haipailist:
 #    if tuple(haipai) not in hand2dict:
 #        print(haipai)
-#
+
 #
 #contents2 = [4, 0, 0, 0, 0, 1, 0, 0, 0, 2]
 #print(1)
