@@ -4,6 +4,7 @@ from enum import Enum
 from PIL import Image
 from sdl2 import *
 import sdl2.ext as sdl2ext
+import score_board
 
 buf = []
 def pilSurface(img):
@@ -259,14 +260,15 @@ class Hai(Enum):
 class Yaku(Enum):
 
     yakuhai = (0, "役", "yaku", 1)
-    reach = (1, "リーチ", "reach", 1)
-    tannyao = (2, "断么九", "tannyao", 1)
-    tsumo = (3, "ツモ", "tsumo", 1)
-    chitoitsu = (4, "七対子", "chitoitsu", 2) 
-    ippatsu = (5, "一発", "ippatsu", 1) 
-    rinshan = (6, "嶺上開花", "rinshan", 1) 
-    pinfu = (7, "平和", "pinfu", 1) 
-    ryuiso = (8, "緑一色", "ryuiso", -1) 
+    reach = (1, "立直", "reach", 1)
+    double_reach = (2, "ダブル立直", "double_reach", 2)
+    tannyao = (3, "断么九", "tannyao", 1)
+    tsumo = (4, "面前自摸和", "tsumo", 1)
+    chitoitsu = (5, "七対子", "chitoitsu", 2) 
+    ippatsu = (6, "一発", "ippatsu", 1) 
+    rinshan = (7, "嶺上開花", "rinshan", 1) 
+    pinfu = (8, "平和", "pinfu", 1) 
+    ryuiso = (9, "緑一色", "ryuiso", -1) 
 
     def __init__(self, _id, _name, _enname, _hansu):
         self._id = _id
@@ -475,8 +477,14 @@ class Hand:
 
     def yaku_check(self, player):
         self.yaku = []
+
+        def double_reach(player):
+            if player.double_reach == True:
+                self.yaku.append(Yaku.valueOf("double_reach"))
+
         def reach(player):
-            if player.reach == True:
+            if player.reach == True and \
+                    player.double_reach == False:
                 self.yaku.append(Yaku.valueOf("reach"))
 
         def yakuhai():
@@ -489,9 +497,18 @@ class Hand:
         def tannyao():
             if self.contents[0] == 0 \
                     and self.contents[1] == 0 \
-                    and self.contents[9] == 0\
-                    and self.furo == []:
+                    and self.contents[9] == 0:
+                pass
+            else:
+                return
+            for block in self.furo:
+                if 0 in block.numbers or\
+                        1 in block.numbers or\
+                        9 in block.numbers:
+                    return
+            else:
                 self.yaku.append(Yaku.valueOf("tannyao"))
+
 
         def pinfu():
             if not self.mensen:
@@ -509,7 +526,7 @@ class Hand:
 
         def tsumo():
             if self.ronhai == -1 \
-                    and self.furo == []:
+                    and self.mensen:
                 self.yaku.append(Yaku.valueOf("tsumo"))
 
         def ippatsu(player):
@@ -532,7 +549,9 @@ class Hand:
                 self.yaku.append(Yaku.valueOf("ryuiso"))
 
         hand = list(self.hand)
+        double_reach(player)
         reach(player)
+        pinfu()
         yakuhai()
         tannyao()
         tsumo()
@@ -540,7 +559,6 @@ class Hand:
         chitoitsu()
         rinshan(player)
         ryuiso()
-        pinfu()
 
         for yaku in self.yaku:
             self.hansu += yaku.hansu
@@ -567,7 +585,7 @@ class Hand:
         self.ten = int(100 * math.ceil(0.01 * self.fu * 4 * float(pow(2, 2 + self.hansu))))
 
 
-    def hora_process(self,player):
+    def hora_process(self, player):
         self.show_hand()
         print(player.name + " hora!")
         print("役:",end="")
@@ -587,7 +605,7 @@ class Hand:
         print("点数",end="")
         print(self.ten)
 
-    def hora_flag(self,contents):
+    def hora_flag(self, contents):
         self.mentsu = []
 
         def chitoitsu_check(contents):
@@ -900,7 +918,7 @@ class Player:
         self.kaze = None
         self.hand = None
         self.name = name
-        self.score = int()
+        self.score = 35000
 
         self.player_pos = player_pos
         if player_pos == 'up':
@@ -914,6 +932,7 @@ class Player:
         self.hand = hand
         self.river = []
         self.river_entities = []
+        self.double_reach = False
         self.reach = False
         self.tsumo = False
         self.ron = False
@@ -994,7 +1013,7 @@ class Command:
         self.state = True
         self.button_names = []
         if not player.reach and \
-                player.hand.furo == []:
+                player.hand.mensen:
             self.textbox_manager.make_button('reach')
             self.button_names.append('reach')
 
@@ -1170,8 +1189,16 @@ class Field:
             player.hand.fu_check()
             player.hand.ten_check()
             player.hand.hora_process(player)
+            score_board.make_score_board(
+                    self.window,
+                    [yaku.enname for yaku in player.hand.yaku],
+                    player.hand.fu,
+                    player.hand.hansu,
+                    player.hand.ten
+                    )
             self.previous_winner = player
-            player.score += 1
+            player.score += player.hand.ten
+            self.nextplayer.score -= player.hand.ten
             print("player score : " + str(player.score))
 
         def hora_check_phase(player):
@@ -1186,11 +1213,15 @@ class Field:
                     for event in events:
                         if event.type == SDL_QUIT:
                             running = False
-                            break
+                            return
                         elif event.type == SDL_MOUSEBUTTONDOWN:
-                            if (self.textbox_manager.entity_dict['tsumo'].sprite.x < event.button.x < self.textbox_manager.entity_dict['tsumo'].sprite.x + self.textbox_manager.entity_dict['tsumo'].sprite.size[0]) and (self.textbox_manager.entity_dict['tsumo'].sprite.y < event.button.y < self.textbox_manager.entity_dict['tsumo'].sprite.y + self.textbox_manager.entity_dict['tsumo'].sprite.size[1]):
+#                            if (self.textbox_manager.entity_dict['tsumo'].sprite.x < event.button.x < self.textbox_manager.entity_dict['tsumo'].sprite.x + self.textbox_manager.entity_dict['tsumo'].sprite.size[0]) and (self.textbox_manager.entity_dict['tsumo'].sprite.y < event.button.y < self.textbox_manager.entity_dict['tsumo'].sprite.y + self.textbox_manager.entity_dict['tsumo'].sprite.size[1]):
+                            if (self.textbox_manager.entity_dict['tsumo'].sprite, event.button):
 
                                 player.hand.agarihai = player.hand.tsumohai
+                                #TODO:上がりはいが-1の時はこれでいいのか
+                                if player.hand.agarihai == -1:
+                                    player.agarihai = player.hand.hand[0]
                                 print("")
                                 print()
                                 hora_process(player)
@@ -1223,16 +1254,30 @@ class Field:
             if naki_pattern != []:
                 print("\n\n\n\n" + self.nextplayer.name)
                 print("sutehai:", self.thisplayer.sutehai.hainame)
+                print(naki_pattern)
                 self.nextplayer.hand.show_hand()
                 if self.thisplayer.name == "You":
 #                    command = str(input())
-                    command = NakiCommand(naki_pattern, self.textbox_manager, self.world)
+                    command = NakiCommand(
+                            naki_pattern,
+                            self.textbox_manager,
+                            self.world
+                            )
                     command = command.command
                 else:
 #                    command = str(input())
-                    command = NakiCommand(naki_pattern, self.textbox_manager, self.world)
+                    command = NakiCommand(
+                            naki_pattern,
+                            self.textbox_manager,
+                            self.world
+                            )
                     command = command.command
-                naki_option = naki_process(command, naki_pattern)
+                print(command)
+                naki_option = naki_process(
+                        command,
+                        naki_pattern
+                        )
+                print(naki_option)
                 #playerhandに処理をする(naki_optionがNoneかチェックもする)
                 if naki_option == 'ron':
                     print(self.nextplayer.hand.ronhai)
@@ -1263,6 +1308,8 @@ class Field:
                 while not command.state:
                     command = Command(str(input()), player)
                 if command.reach == True:
+                    if self.turn == 1:
+                        player.double_reach = True
                     player.reach = True
                     player.ippatsu_flag = True
                     player.reach_move(
