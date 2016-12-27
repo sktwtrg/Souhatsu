@@ -43,7 +43,7 @@ def print_yaku_list(yaku_names):
         draw_text(img, text, 0, 50 * i + 25)
         if yaku.hansu > 0:
             text = str(yaku.hansu) + '飜'
-        else:
+        if yaku.hansu >= 100:
             text = '役満'
         draw_text(img, text, 200, 50 * i + 25)
     return img
@@ -69,7 +69,13 @@ def make_score_board(window = None, yaku_list = ['rinshan', 'pinfu'], fusu = 20,
     rect_tes2 = rect.SDL_Rect(25, 550, 800, 600)
     img = PIL.Image.new("RGBA", (500, 35))
 
-    text = str(fusu) + '符 ' + str(hansu) + '飜 ' + str(tensu) + '点'
+    if hansu > 0:
+        text_hansu = str(hansu) + '飜 '
+    if hansu >= 13:
+        text_hansu = '数え役満 '
+    if hansu >= 100:
+        text_hansu = '役満 '
+    text = str(fusu) + '符 ' + text_hansu + str(tensu) + '点'
     draw_text(img, text, 0, 0)
     surface = pilSurface(img)
     SDL_BlitSurface(surface,

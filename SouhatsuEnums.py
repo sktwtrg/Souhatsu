@@ -138,7 +138,7 @@ class Yaku(Enum):
     ippatsu = (6, "一発", "ippatsu", 1) 
     rinshan = (7, "嶺上開花", "rinshan", 1) 
     pinfu = (8, "平和", "pinfu", 1) 
-    ryuiso = (9, "緑一色", "ryuiso", -1) 
+    ryuiso = (9, "緑一色", "ryuiso", 100) 
 
     def __init__(self, _id, _name, _enname, _hansu):
         self._id = _id
