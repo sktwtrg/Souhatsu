@@ -193,6 +193,8 @@ class Hand:
                 return
             self.yaku.append(SouhatsuEnums.Yaku.valueOf("pinfu"))
 
+            if self.ronhai == -1:
+                self.fu = 20
 
         def tsumo():
             if self.ronhai == -1 \
@@ -206,6 +208,7 @@ class Hand:
         def chitoitsu():
             if self.mentsu[0].type == 'chitoitsu':
                 self.yaku.append(SouhatsuEnums.Yaku.valueOf("chitoitsu"))
+                self.fu = 25
 
         def rinshan(player):
             if player.rinshan == True:
@@ -234,6 +237,8 @@ class Hand:
             self.hansu += yaku.hansu
 
     def fu_check(self):
+        if self.fu in (20,25):
+            return
         if self.ronhai == -1:
             self.fu = 22
         elif self.mensen:
@@ -251,7 +256,8 @@ class Hand:
         self.fu = int(10 * math.ceil(float(self.fu) * 0.1))
 
     def ten_check(self):
-        self.hansu += 2
+        self.hansu += 4
+        print('namecheck:' + self.player.kaze.enname)
         #ハネマン以上
         if self.hansu >= 6:
             if self.hansu in (6,7):
@@ -264,9 +270,9 @@ class Hand:
                 self.ten = 32000
             if self.player.kaze.enname == 'oya':
                 self.ten = int(1.5 * self.ten)
-                if self.ronhai != -1:
+                if self.ronhai == -1:
                     self.ten = int(2.0 * self.ten / 3)
-            elif self.ronhai != -1:
+            elif self.ronhai == -1:
                 self.ten = int(3.0 * self.ten / 4)
             return
 
