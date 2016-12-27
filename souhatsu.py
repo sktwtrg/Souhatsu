@@ -5,339 +5,9 @@ from PIL import Image
 from sdl2 import *
 import sdl2.ext as sdl2ext
 import score_board
-
-buf = []
-def pilSurface(img):
-  buf.append(img.tobytes())
-  return SDL_CreateRGBSurfaceFrom(
-    buf[-1], img.size[0], img.size[1],
-    8 * len(img.mode), img.size[0] * len(img.mode),
-    0x000000ff,
-    0x0000ff00,
-    0x00ff0000,
-    0xff000000)
-
-def sprite_mouse_overlap(sprite, mouse):
-    left, top, right, bottom = sprite.area
-    mx = mouse.x
-    my = mouse.y
-    return left < mx < right and top < my< bottom
-
-def MakeEntity():
-    img_pil = Image.open(img_path)
-    img_pil = img_pil.resize(size)
-    img_surface = pilSurface(img_pil)
-    entity = HaiEntity(world, factory.from_surface(img_surface.contents), temp_tsumohai, player.hand_pos[0] + 41 * (len(player.hand.hand) - 1), player.hand_pos[1])
-    self.movement.hais.append(entity) 
-    player.hand.entities.append(entity)
-    world.process()
-
-class World(sdl2ext.World):
-
-    def __init__(self):
-        super(World, self).__init__()
-        self.hai_entities = list()
-
-    def del_all(self):
-        self.delete_entities(self.hai_entities)
-        self.hai_entities = list()
-
-class MovementSystem(sdl2ext.Applicator):
-    def __init__(self, minx, miny, maxx, maxy):
-        super(MovementSystem, self).__init__()
-        self.componenttypes = (Velocity, sdl2ext.Sprite)
-        self.minx = minx
-        self.miny = miny
-        self.maxx = maxx
-        self.maxy = maxy
-        self.hais = []
-
-    def process(self, world, componentsets):
-        for velocity, sprite in componentsets:
-            swidth, sheight = sprite.size
-            sprite.x += velocity.vx
-            sprite.y += velocity.vy
-
-            sprite.x = max(self.minx, sprite.x)
-            sprite.y = max(self.miny, sprite.y)
-
-            pmaxx = sprite.x + swidth
-            pmaxy = sprite.y + sheight
-            if pmaxx > self.maxx:
-                sprite.x = self.maxx - swidth
-            if pmaxy > self.maxy:
-                sprite.y = self.maxy - sheight
-
-            #TODO:位置情報を変数化
-            for hai in self.hais:
-                if hai.sprite.y < 400 - 30:
-                    hai.velocity.vy = 0
-                    continue
-                elif hai.sprite.y < 400 - 8:
-                    hai.velocity.vy = 0
-                    hai.sprite.y += 1
-                elif hai.sprite.y > 400:
-                    hai.velocity.vy = 0
-                    hai.sprite.y -= 1
-#
-class Velocity:
-
-    def __init__(self):
-        super(Velocity, self).__init__()
-        self.vx = 0
-        self.vy = 0
-
-
-class SoftwareRenderer(sdl2ext.SoftwareSpriteRenderSystem):
-
-    def __init__(self, window):
-        super(SoftwareRenderer, self).__init__(window)
-
-    def render(self, components):
-        sdl2ext.fill(self.surface, sdl2ext.Color(50, 100, 50))
-        rect_tes1 = rect.SDL_Rect(0,0,800,600)
-        super(SoftwareRenderer, self).render(components)
-
-class TenbouEntity(sdl2ext.Entity):
-
-    def __init__(self, world, sprite, posx=0, posy=0):
-        self.sprite = sprite
-        self.sprite.position = posx, posy
-
-class TextBoxEntity(sdl2ext.Entity):
-
-    def __init__(self, world, sprite, textbox, posx=0, posy=0):
-        self.sprite = sprite
-        self.sprite.position = posx, posy
-        self.textbox = textbox
-
-class TextBoxManager:
-
-    def __init__(self, world, factory):
-        self.world = world
-        self.factory = factory
-        self.entity_dict = dict()
-
-    def make_button(self, button_name, size = None, position = None):
-        #TODO: サイズ指定も可能にする
-        button = TextBox.valueOf(button_name)
-        img_pil = Image.open(button.img_path)
-        img_pil = img_pil.resize(button.size)
-        img_surface = pilSurface(img_pil)
-        entity = TextBoxEntity(
-                self.world,
-                self.factory.from_surface(
-                    img_surface.contents
-                    ),
-                button,
-                button.position[0],
-                button.position[1]
-                )
-        self.entity_dict[button_name]  = entity
-        self.world.process()
-
-    def del_button(self, button_name):
-        self.world.delete(self.entity_dict[button_name])
-        del self.entity_dict[button_name]
-        self.world.process()
-
-
-class HaiEntity(sdl2ext.Entity):
-
-    def __init__(self, world, sprite, hai, posx=0, posy=0):
-        self.sprite = sprite
-        self.sprite.position = posx, posy
-        self.hai = hai
-        self.velocity = Velocity()
-
-    def move(self,x,y):
-        self.sprite.x = x
-        self.sprite.y = y
-
-
-class TextBox(Enum):
-
-    TSUMO = ('tsumo', (80, 50), (500, 400), './pai-images/tsumo.png')
-    PON = ('pon', (80, 50), (110, 480), './pai-images/pon.png')
-    KAN = ('kan', (80, 50), (195, 480), './pai-images/kan.png')
-    RON = ('ron', (80, 50), (280, 480), './pai-images/ron.png')
-    REACH = ('reach', (80, 50), (280, 480), './pai-images/reach.png')
-
-    def __init__(self, _name, _size, _position, _img_path):
-        self._name = _name
-        self._size = _size
-        self._position = _position
-        self._img_path = _img_path
-
-    @classmethod
-    def valueOf(cls, name):
-        for textbox in cls:
-            if textbox.name == name:
-                return textbox
-        return None
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def size(self):
-        return self._size
-
-    @property
-    def position(self):
-        return self._position
-
-    @property
-    def img_path(self):
-        return self._img_path
-
-
-class Hai(Enum):
-
-
-    SU1 = (1, 1, '一索', 'yi', './pai-images/sou1-66-90-l-emb.png')
-    SU2 = (2, 2, '二索', 'er', './pai-images/sou2-66-90-l-emb.png')
-    SU3 = (3, 3, '三索', 'san', './pai-images/sou3-66-90-l-emb.png')
-    SU4 = (4, 4, '四索', 'si', './pai-images/sou4-66-90-l-emb.png')
-    SU5 = (5, 5, '五索', 'wu', './pai-images/sou5-66-90-l-emb.png')
-    SU6 = (6, 6, '六索', 'liu', './pai-images/sou6-66-90-l-emb.png')
-    SU7 = (7, 7, '七索', 'qi', './pai-images/sou7-66-90-l-emb.png')
-    SU8 = (8, 8, '八索', 'ba', './pai-images/sou8-66-90-l-emb.png')
-    SU9 = (9, 9, '九索', 'jiu', './pai-images/sou9-66-90-l-emb.png')
-    HATSU = (0, 0, '發', 'fa', './pai-images/ji5-66-90-l.png')
-    DS5 = (10, 5, '赤五', 'rw', './pai-images/aka2-66-90-l-emb.png')
-
-    def __init__(self, _id, _number, _hainame, _chiname, _img_path):
-        self._id = _id
-        self._number = _number
-        self._hainame = _hainame
-        self._img_path = _img_path
-
-    @classmethod
-    def valueAt(cls, num):
-        for hai in cls:
-            if hai.ID == num:
-                return hai
-        return None
-
-    @classmethod
-    def AllHai(cls):
-        allhai = [hai for hai in cls if not hai.number == 5] * 4
-        allhai += [cls.SU5] * 3 + [cls.DS5]
-        return allhai
-
-    @property
-    def ID(self):
-        return self._id
-
-    @property
-    def number(self):
-        return self._number
-
-    @property
-    def hainame(self):
-        return self._hainame
-
-    @property
-    def chiname(self):
-        return self.value[3]
-
-    @property
-    def is_suhai(self):
-        return self.number != None
-
-    @property
-    def img_path(self):
-        return self._img_path
-
-    @property
-    def is_ryuhai(self):
-        return self.number in [0,2,3,4,6,8]
-    
-
-
-class Yaku(Enum):
-
-    yakuhai = (0, "役", "yaku", 1)
-    reach = (1, "立直", "reach", 1)
-    double_reach = (2, "ダブル立直", "double_reach", 2)
-    tannyao = (3, "断么九", "tannyao", 1)
-    tsumo = (4, "面前自摸和", "tsumo", 1)
-    chitoitsu = (5, "七対子", "chitoitsu", 2) 
-    ippatsu = (6, "一発", "ippatsu", 1) 
-    rinshan = (7, "嶺上開花", "rinshan", 1) 
-    pinfu = (8, "平和", "pinfu", 1) 
-    ryuiso = (9, "緑一色", "ryuiso", -1) 
-
-    def __init__(self, _id, _name, _enname, _hansu):
-        self._id = _id
-        self._name = _name
-        self._enname = _enname
-        self._hansu = _hansu
-
-    @classmethod
-    def valueOf(cls, enname):
-        for yaku in cls:
-            if yaku.enname == enname:
-                return yaku
-        return None
-
-    @classmethod
-    def AllHai(cls):
-        pass
-
-    @property
-    def id(self):
-        return self._id
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def enname(self):
-        return self._enname
-
-    @property
-    def hansu(self):
-        return self._hansu
-
-
-class Kaze(Enum):
-
-    oya = (0, "親", "oya")
-    ko = (1, "子", "ko")
-
-    def __init__(self, _id, _name, _enname):
-        self._id = _id
-        self._name = _name
-        self._enname = _enname
-
-    @classmethod
-    def valueOf(cls, name):
-        for kaze in cls:
-            if kaze.enname == name:
-                return kaze
-        return None
-
-    @property
-    def ID(self):
-        return self._id
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def enname(self):
-        return self._enname
-
-    def next_turn(self):
-        if self.enname == "oya":
-            return self.valueOf("ko")
-        else:
-            return self.valueOf("oya")
+import SouhatsuEnums
+from TextBoxManager import TextBoxManager
+from sdl2systems import *
 
 class Block:
 
@@ -396,6 +66,7 @@ class Block:
 
 class Hand:
 
+    #sizeなど外部か
     hai_size = (40, 60)
 
     def __init__(self, deck, player, world, factory, movement, initnum = 8, test = None):
@@ -425,7 +96,6 @@ class Hand:
             for i in test:
                 self.test_tsumo(i)
             return
-
 
         for i in range(initnum):
             self.tsumo(deck)
@@ -480,19 +150,19 @@ class Hand:
 
         def double_reach(player):
             if player.double_reach == True:
-                self.yaku.append(Yaku.valueOf("double_reach"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("double_reach"))
 
         def reach(player):
             if player.reach == True and \
                     player.double_reach == False:
-                self.yaku.append(Yaku.valueOf("reach"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("reach"))
 
         def yakuhai():
             if self.contents[0] == 3:
-                self.yaku.append(Yaku.valueOf("yaku"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("yaku"))
             for block in self.furo:
                 if 0 in block.numbers:
-                    self.yaku.append(Yaku.valueOf("yaku"))
+                    self.yaku.append(SouhatsuEnums.Yaku.valueOf("yaku"))
 
         def tannyao():
             if self.contents[0] == 0 \
@@ -507,7 +177,7 @@ class Hand:
                         9 in block.numbers:
                     return
             else:
-                self.yaku.append(Yaku.valueOf("tannyao"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("tannyao"))
 
 
         def pinfu():
@@ -521,32 +191,32 @@ class Hand:
                     return
             if self.head.fu != 0:
                 return
-            self.yaku.append(Yaku.valueOf("pinfu"))
+            self.yaku.append(SouhatsuEnums.Yaku.valueOf("pinfu"))
 
 
         def tsumo():
             if self.ronhai == -1 \
                     and self.mensen:
-                self.yaku.append(Yaku.valueOf("tsumo"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("tsumo"))
 
         def ippatsu(player):
             if player.ippatsu_flag == True:
-                self.yaku.append(Yaku.valueOf("ippatsu"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("ippatsu"))
 
         def chitoitsu():
             if self.mentsu[0].type == 'chitoitsu':
-                self.yaku.append(Yaku.valueOf("chitoitsu"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("chitoitsu"))
 
         def rinshan(player):
             if player.rinshan == True:
-                self.yaku.append(Yaku.valueOf("rinshan"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("rinshan"))
 
         def ryuiso():
             for hai in self.hand:
                 if not hai.is_ryuhai:
                     break
             else:
-                self.yaku.append(Yaku.valueOf("ryuiso"))
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("ryuiso"))
 
         hand = list(self.hand)
         double_reach(player)
@@ -623,9 +293,9 @@ class Hand:
             mentsu_hais = []
             if check_contents[0] >= 3:
                 check_contents[0] -= 3
-                mentsu_hais.append(Hai.valueAt(0))
-                mentsu_hais.append(Hai.valueAt(0))
-                mentsu_hais.append(Hai.valueAt(0))
+                mentsu_hais.append(SouhatsuEnums.Hai.valueAt(0))
+                mentsu_hais.append(SouhatsuEnums.Hai.valueAt(0))
+                mentsu_hais.append(SouhatsuEnums.Hai.valueAt(0))
                 self.mentsu.append(
                         Block(
                             mentsu_hais,
@@ -640,9 +310,9 @@ class Hand:
             for i in range(1,10):
                 if check_contents[i] >= 3:
                     check_contents[i] -= 3
-                    mentsu_hais.append(Hai.valueAt(i))
-                    mentsu_hais.append(Hai.valueAt(i))
-                    mentsu_hais.append(Hai.valueAt(i))
+                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
+                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
+                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
                     self.mentsu.append(Block(mentsu_hais, block_type = "anko"))
                     if mentsu_check(check_contents, count+1):
                         return True
@@ -653,9 +323,9 @@ class Hand:
                     check_contents[i] -= 1
                     check_contents[i+1] -= 1
                     check_contents[i+2] -= 1
-                    mentsu_hais.append(Hai.valueAt(i))
-                    mentsu_hais.append(Hai.valueAt(i+1))
-                    mentsu_hais.append(Hai.valueAt(i+2))
+                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
+                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i+1))
+                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i+2))
                     self.mentsu.append(Block(mentsu_hais, block_type = "shuntsu"))
                     #順子を抜いて面子チェック
                     if mentsu_check(check_contents, count+1):
@@ -667,7 +337,7 @@ class Hand:
 #        print(contents)
         if chitoitsu_check(contents):
             #TODO:チートイツのブロックは0とする
-            block = Block([Hai.valueAt(0)], block_type = "chitoitsu")
+            block = Block([SouhatsuEnums.Hai.valueAt(0)], block_type = "chitoitsu")
             self.mentsu.append(block)
             return True
 
@@ -675,7 +345,7 @@ class Hand:
             contents_check = list(contents)[:]
             if contents_check[i] >= 2:
                 contents_check[i] -= 2
-                self.head = Block([Hai.valueAt(i)]*2, block_type = "head")
+                self.head = Block([SouhatsuEnums.Hai.valueAt(i)]*2, block_type = "head")
                 #一つ目の面子チェック
                 if mentsu_check(contents_check, 0):
                     self.mentsu += self.furo
@@ -755,7 +425,7 @@ class Hand:
         img_pil = Image.open(self.tsumohai.img_path)
         img_pil = img_pil.resize(Hand.hai_size)
         img_surface = pilSurface(img_pil)
-        entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
+        entity = SouhatsuEnums.HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
 
         self.movement.hais.append(entity) 
         self.entities.append(entity)
@@ -765,7 +435,7 @@ class Hand:
         return self.tsumohai
         
     def test_tsumo(self, number):
-        self.tsumohai = Hai.valueAt(number)
+        self.tsumohai = SouhatsuEnums.Hai.valueAt(number)
         self.hand.append(self.tsumohai)
         self.contents[self.tsumohai.number] += 1
 
@@ -773,7 +443,7 @@ class Hand:
         img_pil = Image.open(self.tsumohai.img_path)
         img_pil = img_pil.resize(Hand.hai_size)
         img_surface = pilSurface(img_pil)
-        entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
+        entity = SouhatsuEnums.HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
 
         self.movement.hais.append(entity) 
         self.entities.append(entity)
@@ -903,7 +573,7 @@ class Hand:
 class Deck:
 
     def __init__(self):
-        self.deck = Hai.AllHai()
+        self.deck = SouhatsuEnums.Hai.AllHai()
         self.shuffle()
 
     def shuffle(self):
@@ -947,7 +617,12 @@ class Player:
         img_pil = img_pil.resize((150,7))
 
         img_surface = pilSurface(img_pil)
-        entity = TenbouEntity(world, factory.from_surface(img_surface.contents), self.river_pos[0] + 60, self.river_pos[1] - 15)
+        entity = SouhatsuEnum.TenbouEntity(
+                world,
+                factory.from_surface(img_surface.contents),
+                self.river_pos[0] + 60,
+                self.river_pos[1] - 15
+                )
 
         self.ribou = entity
         #TODO:world.hai_entitiesに入れる?
@@ -979,12 +654,12 @@ class Command:
             self.reach  = False
             self.number = int(5)
             self.kan = False
-            self.hai = Hai.valueAt(10)
+            self.hai = SouhatsuEnums.Hai.valueAt(10)
         elif cmd[-1] in [str(x) for x in range(10)]:
             self.reach = False
             self.number = int(cmd[-1])
             self.kan = False
-            self.hai = Hai.valueAt(self.number)
+            self.hai = SouhatsuEnums.Hai.valueAt(self.number)
         else:
             self.state = False
             return 
@@ -1147,7 +822,7 @@ class Field:
             self.movement.hais += self.op_player.hand.entities
             
             self.turn = 1
-            self.whos_turn = Kaze.valueOf("oya")
+            self.whos_turn = SouhatsuEnums.Kaze.valueOf("oya")
             self.who_priority()
 
             self.world.process()
@@ -1167,11 +842,11 @@ class Field:
                 self.thisplayer = self.op_player
             else:
                 self.thisplayer = self.yourplayer
-            self.thisplayer.kaze = Kaze.valueOf("oya")
-            self.nextplayer.kaze = Kaze.valueOf("ko")
+            self.thisplayer.kaze = SouhatsuEnums.Kaze.valueOf("oya")
+            self.nextplayer.kaze = SouhatsuEnums.Kaze.valueOf("ko")
         else:
-            self.yourplayer.kaze = Kaze.valueOf("oya")
-            self.op_player.kaze = Kaze.valueOf("ko")
+            self.yourplayer.kaze = SouhatsuEnums.Kaze.valueOf("oya")
+            self.op_player.kaze = SouhatsuEnums.Kaze.valueOf("ko")
             self.thisplayer = self.op_player
             self.nextplayer = self.yourplayer
 
@@ -1188,6 +863,7 @@ class Field:
             player.hand.yaku_check(player)
             player.hand.fu_check()
             player.hand.ten_check()
+            #hand.hora_process とhora_processは違う change this
             player.hand.hora_process(player)
             score_board.make_score_board(
                     self.window,
@@ -1221,9 +897,9 @@ class Field:
                                 player.hand.agarihai = player.hand.tsumohai
                                 #TODO:上がりはいが-1の時はこれでいいのか
                                 if player.hand.agarihai == -1:
-                                    player.agarihai = player.hand.hand[0]
+                                    player.hand.agarihai = player.hand.hand[0]
                                 print("")
-                                print()
+                                print('agarihai:' + player.hand.agarihai)
                                 hora_process(player)
                                 self.textbox_manager.del_button('tsumo')
                                 return True
