@@ -118,11 +118,10 @@ class Hand:
         return self.contents.append(item)
 
     def machi_type_check(self):
-        if self.mentsu[0].type != 'chitoitsu':
-            pass
-        elif self.agarihai.number not in self.head.numbers:
-            pass
-        else:
+        if self.mentsu[0].type == 'chitoitsu':
+            self.machi_type_candidate.append('tanki')
+            self.machi_type= 'tanki'
+        if self.agarihai.number in self.head.numbers:
             self.machi_type_candidate.append('tanki')
             self.machi_type= 'tanki'
 
@@ -453,10 +452,11 @@ class Hand:
             #TODO:ここまでなんとかする
 
     def nakipattern(self, hai):
+        IsReach = self.player.reach
         def pon_check(hai):
-            return self.contents[hai.number] >= 2
+            return (not IsReach) and self.contents[hai.number] >= 2
         def kan_check(hai):
-            return self.contents[hai.number] >= 3
+            return (not IsReach) and self.contents[hai.number] >= 3
         def ron_check(hai):
             contents = self.contents[:]
             contents[hai.number] += 1
@@ -1069,7 +1069,7 @@ class Field:
 
         if not naki_phase():
             return False
-        #鳴き、ロンの処理naki_phasaeはronの時False
+        #鳴き、ロンの処理naki_phaseはronの時False
 
         if ryukyoku_check(self.deck):
             ryukyoku_process()
