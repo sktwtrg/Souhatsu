@@ -16,6 +16,8 @@ def sprite_mouse_overlap(sprite, mouse):
     left, top, right, bottom = sprite.area
     mx = mouse.x
     my = mouse.y
+    print('overlap_test',end='')
+    print(left,mx,right,top,my,bottom)
     return left < mx < right and top < my< bottom
 
 def MakeEntity():

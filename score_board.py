@@ -4,7 +4,7 @@ from PIL import Image
 from sdl2 import *
 import sdl2.ext as sdl2ext
 import numpy
-import souhatsu
+import SouhatsuEnums
 
 buf = []
 def pilSurface(img):
@@ -29,7 +29,7 @@ def draw_text(img, text, x, y):
     draw.text(pos, text, (255, 255, 255))
 
 def yaku_img(yaku_name):
-    yaku = souhatsu.Yaku.valueOf(yaku_name)
+    yaku = SouhatsuEnums.Yaku.valueOf(yaku_name)
     img_name = PIL.Image.new("RGBA", (240, 50))
     text = yaku.name
     text = str(yaku.hansu) + '飜'
@@ -38,7 +38,7 @@ def print_yaku_list(yaku_names):
     img_names = []
     img = PIL.Image.new("RGBA", (320, 50 * len(yaku_names) + 25))
     for i, yaku_name in enumerate(yaku_names):
-        yaku = souhatsu.Yaku.valueOf(yaku_name)
+        yaku = SouhatsuEnums.Yaku.valueOf(yaku_name)
         text = yaku.name
         draw_text(img, text, 0, 50 * i + 25)
         if yaku.hansu > 0:
