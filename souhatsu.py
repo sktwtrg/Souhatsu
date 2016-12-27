@@ -251,9 +251,19 @@ class Hand:
         self.fu = int(10 * math.ceil(float(self.fu) * 0.1))
 
     def ten_check(self):
-        self.ten = int(self.fu * 4 * 100 * math.ceil(float(pow(2, 2 + self.hansu))  * 0.01))
-        self.ten = int(100 * math.ceil(0.01 * self.fu * 4 * float(pow(2, 2 + self.hansu))))
-
+#        self.ten = int(self.fu * 4 * 100 * math.ceil(float(pow(2, 2 + self.hansu))  * 0.01))
+        print('namecheck: ' + self.player.kaze.enname)
+        if self.player.kaze.enname == 'ko':
+            self.ten = int(100 * math.ceil(0.01 * self.fu * 4 * float(pow(2, 2 + self.hansu))))
+        elif self.player.kaze.enname == 'oya':
+            self.ten = int(100 * math.ceil(0.01 * self.fu * 6 * float(pow(2, 2 + self.hansu))))
+        if self.ronhai != -1:
+            self.ten = int(1000 * math.ceil(0.001 * float(self.ten)))
+        else:
+            if self.player.kaze.enname == 'ko':
+                self.ten = int(1000 * math.ceil(0.001 * (float(self.ten)/4))) + int(1000 * math.ceil(0.001 * (float(self.ten)/2)))
+            elif self.player.kaze.enname == 'oya':
+                self.ten = int(1000 * math.ceil(0.001 * (float(self.ten)/3))) * 2
 
     def hora_process(self, player):
         self.show_hand()
@@ -839,14 +849,14 @@ class Field:
     def who_priority(self):
 
         if self.previous_winner != None:
-            #前の親がいない時、
+            #前の親がいる時
             self.nextplayer = self.previous_winner
             if self.nextplayer == self.yourplayer:
                 self.thisplayer = self.op_player
             else:
                 self.thisplayer = self.yourplayer
-            self.thisplayer.kaze = SouhatsuEnums.Kaze.valueOf("oya")
-            self.nextplayer.kaze = SouhatsuEnums.Kaze.valueOf("ko")
+            self.thisplayer.kaze = SouhatsuEnums.Kaze.valueOf("ko")
+            self.nextplayer.kaze = SouhatsuEnums.Kaze.valueOf("oya")
         else:
             self.yourplayer.kaze = SouhatsuEnums.Kaze.valueOf("oya")
             self.op_player.kaze = SouhatsuEnums.Kaze.valueOf("ko")
