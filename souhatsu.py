@@ -251,12 +251,35 @@ class Hand:
         self.fu = int(10 * math.ceil(float(self.fu) * 0.1))
 
     def ten_check(self):
-#        self.ten = int(self.fu * 4 * 100 * math.ceil(float(pow(2, 2 + self.hansu))  * 0.01))
-        print('namecheck: ' + self.player.kaze.enname)
+        self.hansu += 2
+        #ハネマン以上
+        if self.hansu >= 6:
+            if self.hansu in (6,7):
+                self.ten = 12000
+            elif self.hansu in (8,9,10):
+                self.ten = 16000
+            elif self.hansu in (11,12):
+                self.ten = 24000
+            else:
+                self.ten = 32000
+            if self.player.kaze.enname == 'oya':
+                self.ten = int(1.5 * self.ten)
+                if self.ronhai != -1:
+                    self.ten = int(2.0 * self.ten / 3)
+            elif self.ronhai != -1:
+                self.ten = int(3.0 * self.ten / 4)
+            return
+
+        #満貫以下
         if self.player.kaze.enname == 'ko':
             self.ten = int(100 * math.ceil(0.01 * self.fu * 4 * float(pow(2, 2 + self.hansu))))
+            if self.ten >= 8000:
+                self.ten = 8000
         elif self.player.kaze.enname == 'oya':
             self.ten = int(100 * math.ceil(0.01 * self.fu * 6 * float(pow(2, 2 + self.hansu))))
+            if self.ten >= 12000:
+                self.ten = 12000
+
         if self.ronhai != -1:
             self.ten = int(1000 * math.ceil(0.001 * float(self.ten)))
         else:
