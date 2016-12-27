@@ -62,8 +62,6 @@ class Block:
         elif self.type == 'chitoitsu':
             self.fu = 25
 
-
-
 class Hand:
 
     #sizeなど外部か
@@ -120,8 +118,11 @@ class Hand:
         return self.contents.append(item)
 
     def machi_type_check(self):
-        if self.agarihai.number in self.head.numbers or\
-                self.mentsu[0].type == 'chitoitsu' :
+        if self.mentsu[0].type != 'chitoitsu':
+            pass
+        elif self.agarihai.number not in self.head.numbers:
+            pass
+        else:
             self.machi_type_candidate.append('tanki')
             self.machi_type= 'tanki'
 
@@ -617,7 +618,7 @@ class Player:
         img_pil = img_pil.resize((150,7))
 
         img_surface = pilSurface(img_pil)
-        entity = SouhatsuEnum.TenbouEntity(
+        entity = SouhatsuEnums.TenbouEntity(
                 world,
                 factory.from_surface(img_surface.contents),
                 self.river_pos[0] + 60,
@@ -760,12 +761,14 @@ class NakiCommand:
                     for i, button in enumerate(self.buttons):
                         if sprite_mouse_overlap(button.sprite, event.button):
                             self.command = button.textbox.name
-                        else:
-                            self.command = None
-                        for button_name in self.button_names:
-                            self.textbox_manager.del_button(button_name)
-                        world.process()
-                        return
+                            break
+                    else:
+                        print('textboxname:' + button.textbox.name)
+                        self.command = None
+                    for button_name in self.button_names:
+                        self.textbox_manager.del_button(button_name)
+                    world.process()
+                    return
 
             SDL_Delay(10)
             world.process()
@@ -891,15 +894,13 @@ class Field:
                             running = False
                             return
                         elif event.type == SDL_MOUSEBUTTONDOWN:
-#                            if (self.textbox_manager.entity_dict['tsumo'].sprite.x < event.button.x < self.textbox_manager.entity_dict['tsumo'].sprite.x + self.textbox_manager.entity_dict['tsumo'].sprite.size[0]) and (self.textbox_manager.entity_dict['tsumo'].sprite.y < event.button.y < self.textbox_manager.entity_dict['tsumo'].sprite.y + self.textbox_manager.entity_dict['tsumo'].sprite.size[1]):
-                            if (self.textbox_manager.entity_dict['tsumo'].sprite, event.button):
+                            if sprite_mouse_overlap(self.textbox_manager.entity_dict['tsumo'].sprite, event.button):
 
                                 player.hand.agarihai = player.hand.tsumohai
                                 #TODO:上がりはいが-1の時はこれでいいのか
                                 if player.hand.agarihai == -1:
                                     player.hand.agarihai = player.hand.hand[0]
                                 print("")
-                                print('agarihai:' + player.hand.agarihai)
                                 hora_process(player)
                                 self.textbox_manager.del_button('tsumo')
                                 return True
@@ -930,6 +931,7 @@ class Field:
             if naki_pattern != []:
                 print("\n\n\n\n" + self.nextplayer.name)
                 print("sutehai:", self.thisplayer.sutehai.hainame)
+                print("naki_pattern:",end='')
                 print(naki_pattern)
                 self.nextplayer.hand.show_hand()
                 if self.thisplayer.name == "You":
