@@ -1,6 +1,5 @@
 import random
 import math
-from enum import Enum
 from PIL import Image
 from sdl2 import *
 import sdl2.ext as sdl2ext
@@ -837,6 +836,11 @@ class Field:
 
     def start(self):
         while self.onesession():
+            
+            # 点数表示のタイミングと変更のタイミングを考える
+            self.textbox_manager.make_ten_box('my_ten_board', 35000)
+            self.textbox_manager.make_ten_box('op_ten_board', 35000)
+
             self.movement.hais = []
             self.deck = Deck()
             self.yourplayer.make_hand(
