@@ -220,6 +220,10 @@ class Hand:
             else:
                 self.yaku.append(SouhatsuEnums.Yaku.valueOf("ryuiso"))
 
+        def tenhou(player):
+            if player.tenhou_flag:
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("tenhou"))
+
         hand = list(self.hand)
         double_reach(player)
         reach(player)
@@ -231,6 +235,7 @@ class Hand:
         chitoitsu()
         rinshan(player)
         ryuiso()
+        tenhou(player)
 
         for yaku in self.yaku:
             self.hansu += yaku.hansu
@@ -648,6 +653,12 @@ class Player:
         self.river_entities = []
         self.double_reach = False
         self.reach = False
+        if self.kaze.enname == 'oya':
+            self.tenhou_flag = True
+            self.chihou_flag = False
+        else:
+            self.tenhou_flag = False
+            self.chihou_flag = True
         self.tsumo = False
         self.ron = False
         self.rinshan = False
@@ -843,6 +854,8 @@ class Field:
         self.op_player.set_next_player(self.yourplayer)
         self.previous_winner = None
 
+        self.turn = int()
+
     def start(self):
         while self.onesession():
             
@@ -851,6 +864,8 @@ class Field:
             self.textbox_manager.make_ten_box('op_ten_board', self.op_player.score)
 
             self.movement.hais = []
+            self.whos_turn = SouhatsuEnums.Kaze.valueOf("oya")
+            self.who_priority()
             self.deck = Deck()
             self.yourplayer.make_hand(
                     Hand(
@@ -871,14 +886,12 @@ class Field:
                         initnum=7
                         )
                     )
-#            self.yourplayer.make_hand(Hand(self.deck, self.yourplayer, self.world, self.factory, self.movement, test = [2,5,5,10,9,9,9,9]))
-#            self.op_player.make_hand(Hand(self.deck, self.op_player, self.world, self.factory, self.movement, initnum=7, test = [2,2,2,4,4,6,5]))
+#            self.yourplayer.make_hand(Hand(self.deck, self.yourplayer, self.world, self.factory, self.movement, test = [2,3,4,6,6,9,9,9]))
+#            self.op_player.make_hand(Hand(self.deck, self.op_player, self.world, self.factory, self.movement, initnum=7, test = [2,2,10,4,4,6,10]))
             self.movement.hais += self.yourplayer.hand.entities
             self.movement.hais += self.op_player.hand.entities
             
             self.turn = 1
-            self.whos_turn = SouhatsuEnums.Kaze.valueOf("oya")
-            self.who_priority()
 
             self.world.process()
             while self.oneturn():
@@ -954,8 +967,9 @@ class Field:
                             if sprite_mouse_overlap(self.textbox_manager.entity_dict['tsumo'].sprite, event.button):
 
                                 player.hand.agarihai = player.hand.tsumohai
-                                #TODO:上がりはいが-1の時はこれでいいのか
+                                #TODO:上がりはいが-1の時はこれでいいのか。いつ起こる。とりあえずここで止める
                                 if player.hand.agarihai == -1:
+                                    input()
                                     player.hand.agarihai = player.hand.hand[0]
                                 hora_process(player)
                                 self.textbox_manager.del_button('tsumo')
@@ -1112,7 +1126,7 @@ class Field:
 
         #tsumo
         if len(player.hand.hand) in [1,4,7]:
-            temp_tsumohai = player.hand.tsumo(self.deck)
+            player.hand.tsumo(self.deck)
 
         self.show_field()
 
@@ -1132,6 +1146,7 @@ class Field:
             return False
 
         if player.kaze.enname == "oya":
+            player.tenhou_flag = False
             self.turn += 1
         return True
 
