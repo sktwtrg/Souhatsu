@@ -630,12 +630,17 @@ class Player:
         self.score = 35000
 
         self.player_pos = player_pos
+        self.next_player = None
+
         if player_pos == 'up':
             self.hand_pos = (180, 100)
             self.river_pos = (150, 200)
         if player_pos == 'down':
             self.hand_pos = (120,400)
             self.river_pos = (150,300)
+
+    def set_next_player(self, next_player):
+        self.next_player = next_player
 
     def make_hand(self, hand):
         self.hand = hand
@@ -834,6 +839,8 @@ class Field:
 
         self.yourplayer = Player("You", 'down')
         self.op_player= Player("OP", 'up')
+        self.yourplayer.set_next_player(self.op_player)
+        self.op_player.set_next_player(self.yourplayer)
         self.previous_winner = None
 
     def start(self):
@@ -910,24 +917,25 @@ class Field:
         def tsumo_phase():
             pass
 
-        def hora_process(player):
-            player.hand.machi_type_check()
-            player.hand.yaku_check(player)
-            player.hand.fu_check()
-            player.hand.ten_check()
+        def hora_process(hora_player):
+            horaed_player = hora_player.next_player
+            hora_player.hand.machi_type_check()
+            hora_player.hand.yaku_check(hora_player)
+            hora_player.hand.fu_check()
+            hora_player.hand.ten_check()
             #hand.hora_process とhora_processは違う change this
-            player.hand.hora_process(player)
+            hora_player.hand.hora_process(hora_player)
             score_board.make_score_board(
                     self.window,
-                    [yaku.enname for yaku in player.hand.yaku],
-                    player.hand.fu,
-                    player.hand.hansu,
-                    player.hand.ten
+                    [yaku.enname for yaku in hora_player.hand.yaku],
+                    hora_player.hand.fu,
+                    hora_player.hand.hansu,
+                    hora_player.hand.ten
                     )
-            self.previous_winner = player
-            player.score += player.hand.ten
-            self.nextplayer.score -= player.hand.ten
-            print("player score : " + str(player.score))
+            self.previous_winner = hora_player
+            hora_player.score += hora_player.hand.ten
+            horaed_player.score -= horaed_player.hand.ten
+            print("player score : " + str(hora_player.score))
 
         def hora_check_phase(player):
 
