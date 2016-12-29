@@ -848,6 +848,8 @@ class Field:
 
         self.textbox_manager = TextBoxManager(self.world, self.factory)
 
+
+    def start(self):
         self.yourplayer = Player("You", 'down')
         self.op_player= Player("OP", 'up')
         self.yourplayer.set_next_player(self.op_player)
@@ -855,8 +857,6 @@ class Field:
         self.previous_winner = None
 
         self.turn = int()
-
-    def start(self):
         while self.onesession():
             
             # 点数表示のタイミングと変更のタイミングを考える
@@ -867,27 +867,27 @@ class Field:
             self.whos_turn = SouhatsuEnums.Kaze.valueOf("oya")
             self.who_priority()
             self.deck = Deck()
-            self.yourplayer.make_hand(
-                    Hand(
-                        self.deck,
-                        self.yourplayer,
-                        self.world,
-                        self.factory,
-                        self.movement
-                        )
-                    )
-            self.op_player.make_hand(
-                    Hand(
-                        self.deck,
-                        self.op_player,
-                        self.world,
-                        self.factory,
-                        self.movement,
-                        initnum=7
-                        )
-                    )
-#            self.yourplayer.make_hand(Hand(self.deck, self.yourplayer, self.world, self.factory, self.movement, test = [2,3,4,6,6,9,9,9]))
-#            self.op_player.make_hand(Hand(self.deck, self.op_player, self.world, self.factory, self.movement, initnum=7, test = [2,2,10,4,4,6,10]))
+#            self.yourplayer.make_hand(
+#                    Hand(
+#                        self.deck,
+#                        self.yourplayer,
+#                        self.world,
+#                        self.factory,
+#                        self.movement
+#                        )
+#                    )
+#            self.op_player.make_hand(
+#                    Hand(
+#                        self.deck,
+#                        self.op_player,
+#                        self.world,
+#                        self.factory,
+#                        self.movement,
+#                        initnum=7
+#                        )
+#                    )
+            self.yourplayer.make_hand(Hand(self.deck, self.yourplayer, self.world, self.factory, self.movement, test = [2,3,4,6,6,9,9,9]))
+            self.op_player.make_hand(Hand(self.deck, self.op_player, self.world, self.factory, self.movement, initnum=7, test = [2,2,10,4,4,6,10]))
             self.movement.hais += self.yourplayer.hand.entities
             self.movement.hais += self.op_player.hand.entities
             
@@ -923,6 +923,9 @@ class Field:
             self.nextplayer = self.yourplayer
 
     def onesession(self):
+        if self.yourplayer.score < 0 \
+                or self.op_player.score < 0:
+            return False
         return True
 
 
@@ -1174,6 +1177,8 @@ class Field:
 
 if __name__ == "__main__":
     field = Field()
-    field.start()
+
+    while True:
+        field.start()
 
 
