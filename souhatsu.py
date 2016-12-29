@@ -255,7 +255,7 @@ class Hand:
         self.fu = int(10 * math.ceil(float(self.fu) * 0.1))
 
     def ten_check(self):
-        self.hansu += 4
+#        self.hansu += 4
         print('namecheck:' + self.player.kaze.enname)
         #ハネマン以上
         if self.hansu >= 6:
@@ -469,7 +469,7 @@ class Hand:
         self.entities.append(entity)
         self.world.hai_entities.append(entity)
         self.world.process()
-            #TODO:ここまでなんとかする
+        #TODO:ここまでなんとかする
         return self.tsumohai
         
     def test_tsumo(self, number):
@@ -782,11 +782,13 @@ class NakiCommand:
         self.naki_pattern = naki_pattern
         self.textbox_manager = textbox_manager
         self.world = world
+        self.button_names = list()
+        self.buttons = list()
 
         for pattern in naki_pattern:
             self.textbox_manager.make_button(pattern)
-        self.buttons = self.textbox_manager.entity_dict.values()
-        self.button_names = list(self.textbox_manager.entity_dict.keys())
+            self.button_names.append(pattern)
+            self.buttons.append(self.textbox_manager.entity_dict[pattern])
         self.world.process()
 
         while True:
@@ -801,11 +803,11 @@ class NakiCommand:
                             self.command = button.textbox.name
                             break
                     else:
-                        print('textboxname:' + button.textbox.name)
                         self.command = None
                     for button_name in self.button_names:
                         self.textbox_manager.del_button(button_name)
                     world.process()
+
                     return
 
             SDL_Delay(10)
@@ -838,8 +840,8 @@ class Field:
         while self.onesession():
             
             # 点数表示のタイミングと変更のタイミングを考える
-            self.textbox_manager.make_ten_box('my_ten_board', 35000)
-            self.textbox_manager.make_ten_box('op_ten_board', 35000)
+            self.textbox_manager.make_ten_box('my_ten_board', self.yourplayer.score)
+            self.textbox_manager.make_ten_box('op_ten_board', self.op_player.score)
 
             self.movement.hais = []
             self.deck = Deck()
@@ -873,9 +875,13 @@ class Field:
 
             self.world.process()
             while self.oneturn():
+
                 self.world.process()
                 pass
             print("HAIPAI!!\n")
+#            del_allにまとめる
+            self.textbox_manager.del_button('op_ten_board')
+            self.textbox_manager.del_button('my_ten_board')
             self.world.del_all()
             self.world.process()
 
@@ -943,7 +949,6 @@ class Field:
                                 #TODO:上がりはいが-1の時はこれでいいのか
                                 if player.hand.agarihai == -1:
                                     player.hand.agarihai = player.hand.hand[0]
-                                print("")
                                 hora_process(player)
                                 self.textbox_manager.del_button('tsumo')
                                 return True
@@ -970,7 +975,7 @@ class Field:
             return cmd
 
         def naki_phase():
-            naki_pattern = (self.nextplayer.hand.nakipattern(self.thisplayer.sutehai))
+            naki_pattern = self.nextplayer.hand.nakipattern(self.thisplayer.sutehai)
             if naki_pattern != []:
                 print("\n\n\n\n" + self.nextplayer.name)
                 print("sutehai:", self.thisplayer.sutehai.hainame)

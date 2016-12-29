@@ -32,6 +32,8 @@ class TextBox(Enum):
     KAN = ('kan', (80, 50), (195, 480), './pai-images/kan.png')
     RON = ('ron', (80, 50), (280, 480), './pai-images/ron.png')
     REACH = ('reach', (80, 50), (280, 480), './pai-images/reach.png')
+    MY_TEN = ('my_ten_board', (150, 50), (600, 480), './pai-images/pon.png')
+    OP_TEN = ('op_ten_board', (150, 50), (600, 180), './pai-images/kan.png')
 
     def __init__(self, _name, _size, _position, _img_path):
         self._name = _name

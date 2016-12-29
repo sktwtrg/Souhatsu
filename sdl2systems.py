@@ -1,5 +1,7 @@
 from sdl2 import *
 import sdl2.ext as sdl2ext
+import PIL
+import numpy
 
 buf = []
 def pilSurface(img):
@@ -11,6 +13,18 @@ def pilSurface(img):
     0x0000ff00,
     0x00ff0000,
     0xff000000)
+
+def draw_text(img, text, x, y, textsize = 32):
+    draw = PIL.ImageDraw.Draw(img)
+    draw.font = PIL.ImageFont.truetype("./Fonts/hiraginoM.ttc", textsize)
+    img_size = numpy.array(img.size)
+    txt_size = numpy.array(draw.font.getsize(text))
+    pos = (img_size - txt_size) / 2
+    pos[0] = x
+    pos[1] = y
+
+    draw.text(pos, text, (255, 255, 255))
+
 
 def sprite_mouse_overlap(sprite, mouse):
     left, top, right, bottom = sprite.area

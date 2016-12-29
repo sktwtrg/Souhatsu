@@ -3,6 +3,7 @@ import PIL.ImageFont
 from PIL import Image
 from sdl2 import *
 import sdl2.ext as sdl2ext
+from sdl2systems import *
 import numpy
 import SouhatsuEnums
 
@@ -17,17 +18,6 @@ def pilSurface(img):
     0x00ff0000,
     0xff000000)
 
-def draw_text(img, text, x, y):
-    draw = PIL.ImageDraw.Draw(img)
-    draw.font = PIL.ImageFont.truetype("./Fonts/hiraginoM.ttc", 32)
-    img_size = numpy.array(img.size)
-    txt_size = numpy.array(draw.font.getsize(text))
-    pos = (img_size - txt_size) / 2
-    pos[0] = x
-    pos[1] = y
-
-    draw.text(pos, text, (255, 255, 255))
-
 def yaku_img(yaku_name):
     yaku = SouhatsuEnums.Yaku.valueOf(yaku_name)
     img_name = PIL.Image.new("RGBA", (240, 50))
@@ -35,7 +25,6 @@ def yaku_img(yaku_name):
     text = str(yaku.hansu) + '飜'
 
 def print_yaku_list(yaku_names):
-    img_names = []
     img = PIL.Image.new("RGBA", (320, 50 * len(yaku_names) + 25))
     for i, yaku_name in enumerate(yaku_names):
         yaku = SouhatsuEnums.Yaku.valueOf(yaku_name)
@@ -69,7 +58,7 @@ def make_score_board(window = None, yaku_list = ['rinshan', 'pinfu'], fusu = 20,
     rect_tes2 = rect.SDL_Rect(25, 550, 800, 600)
     img = PIL.Image.new("RGBA", (500, 35))
 
-    if hansu > 0:
+    if hansu >= 0:
         text_hansu = str(hansu) + '飜 '
     if hansu >= 13:
         text_hansu = '数え役満 '
