@@ -947,7 +947,7 @@ class Field:
                     )
             self.previous_winner = hora_player
             hora_player.score += hora_player.hand.ten
-            horaed_player.score -= horaed_player.hand.ten
+            horaed_player.score -= hora_player.hand.ten
             print("player score : " + str(hora_player.score))
 
         def hora_check_phase(player):
