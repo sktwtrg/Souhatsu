@@ -117,10 +117,11 @@ class Hand:
         return self.contents.append(item)
 
     def machi_type_check(self):
+        #TODO:描き方変？
         if self.mentsu[0].type == 'chitoitsu':
             self.machi_type_candidate.append('tanki')
             self.machi_type= 'tanki'
-        if self.agarihai.number in self.head.numbers:
+        elif self.agarihai.number in self.head.numbers:
             self.machi_type_candidate.append('tanki')
             self.machi_type= 'tanki'
 
