@@ -225,6 +225,16 @@ class Hand:
             if player.tenhou_flag:
                 self.yaku.append(SouhatsuEnums.Yaku.valueOf("tenhou"))
 
+        def chihou(player):
+            if player.chihou_flag and\
+                    self.ronhai == -1:
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("chihou"))
+
+        def renhou(player):
+            if player.chihou_flag and\
+                    self.ronhai != -1:
+                self.yaku.append(SouhatsuEnums.Yaku.valueOf("renhou"))
+
         hand = list(self.hand)
         double_reach(player)
         reach(player)
@@ -237,6 +247,8 @@ class Hand:
         rinshan(player)
         ryuiso()
         tenhou(player)
+        chihou(player)
+        renhou(player)
 
         for yaku in self.yaku:
             self.hansu += yaku.hansu
@@ -636,7 +648,7 @@ class Player:
         self.score = 35000
 
         self.player_pos = player_pos
-        self.next_player = None
+        self.next = None
 
         if player_pos == 'up':
             self.hand_pos = (180, 100)
@@ -645,8 +657,8 @@ class Player:
             self.hand_pos = (120,400)
             self.river_pos = (150,300)
 
-    def set_next_player(self, next_player):
-        self.next_player = next_player
+    def set_next(self, nextplayer):
+        self.next = nextplayer
 
     def make_hand(self, hand):
         self.hand = hand
@@ -853,8 +865,8 @@ class Field:
     def start(self):
         self.yourplayer = Player("You", 'down')
         self.op_player= Player("OP", 'up')
-        self.yourplayer.set_next_player(self.op_player)
-        self.op_player.set_next_player(self.yourplayer)
+        self.yourplayer.set_next(self.op_player)
+        self.op_player.set_next(self.yourplayer)
         self.previous_winner = None
 
         self.turn = int()
@@ -935,7 +947,7 @@ class Field:
             pass
 
         def hora_process(hora_player):
-            horaed_player = hora_player.next_player
+            horaed_player = hora_player.next
             hora_player.hand.machi_type_check()
             hora_player.hand.yaku_check(hora_player)
             hora_player.hand.fu_check()
@@ -1151,6 +1163,7 @@ class Field:
 
         if player.kaze.enname == "oya":
             player.tenhou_flag = False
+            player.next.chihou_flag = False
             self.turn += 1
         return True
 
