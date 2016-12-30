@@ -247,6 +247,40 @@ class Hand:
                     return
             self.yaku.append(SouhatsuEnums.Yaku.valueOf("ryananko"))
 
+        def ipeiko():
+            #TODO:未実装、必要？
+            return
+
+        def chanta_etc():
+            for block in self.mentsu:
+                if not (block.type in ('anko', 'minko', 'ankan', 'minkan')\
+                        and block.numbers[0] in (0,1,9)):
+                    break
+            else:
+                if self.head.numbers[0]in (0,1,9):
+                    self.yaku.append(SouhatsuEnums.Yaku.valueOf("honroutou"))
+                    return
+
+            for block in self.mentsu:
+                if block.numbers[0] != 1 and\
+                        block.numbers[2] != 9:
+                    break
+            else:
+                if self.head.numbers[0]in (1,9):
+                    self.yaku.append(SouhatsuEnums.Yaku.valueOf("junchan"))
+                    return
+
+            for block in self.mentsu:
+                if block.numbers[0] not in (0,1) and\
+                        block.numbers[2] != 9:
+                    break
+            else:
+                if self.head.numbers[0]in (0,1,9):
+                    self.yaku.append(SouhatsuEnums.Yaku.valueOf("chanta"))
+                    return
+
+
+
         hand = list(self.hand)
         double_reach(player)
         reach(player)
@@ -263,6 +297,8 @@ class Hand:
         renhou(player)
         toitoihou()
         ryananko()
+        ipeiko()
+        chanta_etc()
 
         for yaku in self.yaku:
             self.hansu += yaku.hansu
