@@ -1161,10 +1161,9 @@ class Field:
             ryukyoku_process()
             return False
 
-        if player.kaze.enname == "oya":
-            player.tenhou_flag = False
-            player.next.chihou_flag = False
-            self.turn += 1
+        player.tenhou_flag = False
+        player.chihou_flag = False
+        self.turn += 1
         return True
 
     def show_field(self):
