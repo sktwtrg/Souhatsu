@@ -235,6 +235,18 @@ class Hand:
                     self.ronhai != -1:
                 self.yaku.append(SouhatsuEnums.Yaku.valueOf("renhou"))
 
+        def toitoihou():
+            for block in self.mentsu:
+                if block.type not in ('minko', 'anko', 'ankan', 'daiminkan'):
+                    return
+            self.yaku.append(SouhatsuEnums.Yaku.valueOf("toitoihou"))
+
+        def ryananko():
+            for block in self.mentsu:
+                if block.type not in ('anko', 'ankan'):
+                    return
+            self.yaku.append(SouhatsuEnums.Yaku.valueOf("ryananko"))
+
         hand = list(self.hand)
         double_reach(player)
         reach(player)
@@ -249,6 +261,8 @@ class Hand:
         tenhou(player)
         chihou(player)
         renhou(player)
+        toitoihou()
+        ryananko()
 
         for yaku in self.yaku:
             self.hansu += yaku.hansu
@@ -331,7 +345,7 @@ class Hand:
         print("点数",end="")
         print(self.ten)
 
-    def hora_flag(self, contents):
+    def hora_flag(self, contents, agarihai, ron):
         self.mentsu = []
 
         def chitoitsu_check(contents):
@@ -349,15 +363,24 @@ class Hand:
             mentsu_hais = []
             if check_contents[0] >= 3:
                 check_contents[0] -= 3
-                mentsu_hais.append(SouhatsuEnums.Hai.valueAt(0))
-                mentsu_hais.append(SouhatsuEnums.Hai.valueAt(0))
-                mentsu_hais.append(SouhatsuEnums.Hai.valueAt(0))
-                self.mentsu.append(
-                        Block(
-                            mentsu_hais,
-                            block_type = "anko"
+                for x in range(3):
+                    mentsu_hais.append(
+                            SouhatsuEnums.Hai.valueAt(0)
                             )
-                        )
+                if ron and agarihai.number == 0:
+                    self.mentsu.append(
+                            Block(
+                                mentsu_hais,
+                                block_type = "minko"
+                                )
+                            )
+                else:
+                    self.mentsu.append(
+                            Block(
+                                mentsu_hais,
+                                block_type = "anko"
+                                )
+                            )
                 #発面子を抜いて面子チェック
                 if mentsu_check(check_contents,count+1):
                     return True
@@ -366,10 +389,22 @@ class Hand:
             for i in range(1,10):
                 if check_contents[i] >= 3:
                     check_contents[i] -= 3
-                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
-                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
-                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
-                    self.mentsu.append(Block(mentsu_hais, block_type = "anko"))
+                    for x in range(3):
+                        mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
+                    if ron and agarihai.number == i:
+                        self.mentsu.append(
+                                Block(
+                                    mentsu_hais,
+                                    block_type = "minko"
+                                    )
+                                )
+                    else:
+                        self.mentsu.append(
+                                Block(
+                                    mentsu_hais,
+                                    block_type = "anko"
+                                    )
+                                )
                     if mentsu_check(check_contents, count+1):
                         return True
                     del self.mentsu[-1]
@@ -516,7 +551,7 @@ class Hand:
         def ron_check(hai):
             contents = self.contents[:]
             contents[hai.number] += 1
-            return self.hora_flag(contents)
+            return self.hora_flag(contents, hai, True)
         nakipattern = []
         if pon_check(hai): nakipattern.append("pon")
         if kan_check(hai): nakipattern.append("kan")
@@ -968,8 +1003,12 @@ class Field:
 
         def hora_check_phase(player):
 
-            if player.hand.hora_flag(player.hand.contents)\
-                    and player.naki_status in [None,'kan']:
+            if player.hand.hora_flag(
+                    player.hand.contents,
+                    player.hand.hand[-1],
+                    False
+                    ) and \
+                    player.naki_status in [None,'kan']:
                 print("You Tsumo?")
                 self.textbox_manager.make_button('tsumo')
                 while True:
