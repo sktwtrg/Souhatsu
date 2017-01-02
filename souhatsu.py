@@ -252,6 +252,9 @@ class Hand:
             return
 
         def chanta_etc():
+            if self.mentsu[0].type == 'chitoitsu':
+                return
+
             for block in self.mentsu:
                 if not (block.type in ('anko', 'minko', 'ankan', 'minkan')\
                         and block.numbers[0] in (0,1,9)):
