@@ -1,8 +1,12 @@
+import souhatsu
+import hand
+import SouhatsuEnums
+from souhatsu import Block
 
 class HandAnalyzer:
 
-    def __init__(self, hand):
-        self.hand = hand
+    def __init__(self):
+        pass
 
     def machi_type_check(self):
         #TODO:描き方変？
@@ -248,21 +252,31 @@ class HandAnalyzer:
             elif self.player.kaze.enname == 'oya':
                 self.ten = int(1000 * math.ceil(0.001 * (float(self.ten)/3))) * 2
 
-    def hora_flag(self):
-        self.mentsu = []
 
-        def chitoitsu_check(contents):
-            toitsu_num = 0
-            for num in contents:
-                if num == 2:
-                    toitsu_num += 1
-                if toitsu_num == 4:
-                    return True
-
-        def mentsu_check(check_contents, count):
-            if check_contents == [0]*10:
+    @staticmethod
+    def chitoitsu_check(contents):
+        toitsu_num = 0
+        for num in contents:
+            if num == 2:
+                toitsu_num += 1
+            if toitsu_num == 4:
                 return True
-            #TODO:change this
+
+    def mentsu_list_func(self):
+        mentsu_list = []
+        self.result_dict = {(0,)*10 : True}
+        self.history = []
+        def result_update(check_contents, result):
+            check_contents = tuple(check_contents)
+            self.history.append(check_contents)
+            self.result_dict[check_contents] = result
+            if len(self.history) > 50000:
+                del self.result_dict[self.history[0]]
+                self.history.pop(0)
+
+        def mentsu_check(check_contents, ronhai, count):
+            if tuple(check_contents) in self.result_dict:
+                return self.result_dict[tuple(check_contents)]
             mentsu_hais = []
             if check_contents[0] >= 3:
                 check_contents[0] -= 3
@@ -270,83 +284,89 @@ class HandAnalyzer:
                     mentsu_hais.append(
                             SouhatsuEnums.Hai.valueAt(0)
                             )
-                if ron and agarihai.number == 0:
-                    self.mentsu.append(
-                            Block(
-                                mentsu_hais,
-                                block_type = "minko"
+                if ronhai != -1:
+                    if ronhai.number == 0:
+                        mentsu_list.append(
+                                Block(
+                                    mentsu_hais,
+                                    block_type = "minko"
+                                    )
                                 )
-                            )
                 else:
-                    self.mentsu.append(
+                    mentsu_list.append(
                             Block(
                                 mentsu_hais,
                                 block_type = "anko"
                                 )
                             )
                 #発面子を抜いて面子チェック
-                if mentsu_check(check_contents,count+1):
-                    return True
-                del self.mentsu[-1]
+                if mentsu_check(check_contents, ronhai, count+1):
+                    result_update(check_contents, mentsu_list)
+                    return mentsu_list
+                del mentsu_list[-1]
 
             for i in range(1,10):
                 if check_contents[i] >= 3:
                     check_contents[i] -= 3
                     for x in range(3):
                         mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
-                    if ron and agarihai.number == i:
-                        self.mentsu.append(
-                                Block(
-                                    mentsu_hais,
-                                    block_type = "minko"
+                    if ronhai != -1:
+                        if ronhai.number == i:
+                            mentsu_list.append(
+                                    Block(
+                                        mentsu_hais,
+                                        block_type = "minko"
+                                        )
                                     )
-                                )
                     else:
-                        self.mentsu.append(
+                        mentsu_list.append(
                                 Block(
                                     mentsu_hais,
                                     block_type = "anko"
                                     )
                                 )
-                    if mentsu_check(check_contents, count+1):
-                        return True
-                    del self.mentsu[-1]
+                    if mentsu_check(check_contents, ronhai, count+1):
+                        result_update(check_contents, mentsu_list)
+                        return mentsu_list
+                    del mentsu_list[-1]
+                #8,9,10の順子は存在しないのでcontinue
                 elif i >= 8:
                     continue
                 elif check_contents[i] > 0 and check_contents[i+1] > 0 and check_contents[i+2] > 0:
-                    check_contents[i] -= 1
-                    check_contents[i+1] -= 1
-                    check_contents[i+2] -= 1
-                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
-                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i+1))
-                    mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i+2))
-                    self.mentsu.append(Block(mentsu_hais, block_type = "shuntsu"))
+                    for x in range(3):
+                        check_contents[i + x] -= 1
+                        mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i + x))
+                    mentsu_list.append(Block(mentsu_hais, block_type = "shuntsu"))
                     #順子を抜いて面子チェック
-                    if mentsu_check(check_contents, count+1):
-                        return True
-                    del self.mentsu[-1]
+                    if mentsu_check(check_contents, ronhai, count+1):
+                        result_update(check_contents, mentsu_list)
+                        return mentsu_list
+                    del mentsu_list[-1]
             else:
+                result_update(check_contents, False)
                 return False
+        return mentsu_check
 
-#        print(contents)
-        if chitoitsu_check(contents):
-            #TODO:チートイツのブロックは0とする
+    def hora_flag(self, contents, ronhai, furo):
+        mentsu_list_func = self.mentsu_list_func()
+        mentsu = []
+        if self.chitoitsu_check(contents):
             block = Block([SouhatsuEnums.Hai.valueAt(0)], block_type = "chitoitsu")
-            self.mentsu.append(block)
-            return True
+            mentsu.append(block)
+            head = Block([SouhatsuEnums.Hai.valueAt(0)], block_type = "head")
+            return (head, mentsu)
 
         for i, number in enumerate(contents):
-            contents_check = list(contents)[:]
+            contents_check = contents[:]
             if contents_check[i] >= 2:
                 contents_check[i] -= 2
-                self.head = Block([SouhatsuEnums.Hai.valueAt(i)]*2, block_type = "head")
+                head = Block([SouhatsuEnums.Hai.valueAt(i)]*2, block_type = "head")
                 #一つ目の面子チェック
-                if mentsu_check(contents_check, 0):
-                    self.mentsu += self.furo
-                    return True
+                mentsu = mentsu_list_func(contents_check, ronhai, 0)
+                if mentsu:
+                    mentsu += furo
+                    return (head, mentsu)
         else:
-            self.yaku = []
-            self.mentsu = []
             return False
 
     def tenpai_flag(self):
@@ -394,4 +414,12 @@ class HandAnalyzer:
         if ron_check(hai): nakipattern.append("ron")
         return nakipattern
 
+if __name__ == "__main__":
+    deck = souhatsu.Deck()
+    player = souhatsu.Player('aaa')
+#    hand = hand.Hand(deck, player, test=[0,0,0,1,1,1,1,2], gui=False)
+    hand = hand.Hand(deck, player, test=[0,0,1,2,2,3,3,8], gui=False)
+    hand.show_hand()
+    a = HandAnalyzer()
+    print(a.hora_flag(hand.contents, hand.ronhai, hand.furo))
 
