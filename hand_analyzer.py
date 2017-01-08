@@ -8,34 +8,35 @@ class HandAnalyzer:
     def __init__(self):
         pass
 
-    def machi_type_check(self):
+    def machi_type_check(self, hand):
         #TODO:描き方変？
-        if self.mentsu[0].type == 'chitoitsu':
-            self.machi_type_candidate.append('tanki')
-            self.machi_type= 'tanki'
-        elif self.agarihai.number in self.head.numbers:
-            self.machi_type_candidate.append('tanki')
-            self.machi_type= 'tanki'
+        #agarihaiいつセットされるか問題 head問題
+        if hand.mentsu[0].type == 'chitoitsu':
+            hand.machi_type_candidate.append('tanki')
+            hand.machi_type= 'tanki'
+        elif hand.agarihai.number in hand.head.numbers:
+            hand.machi_type_candidate.append('tanki')
+            hand.machi_type= 'tanki'
 
-        for block in self.mentsu:
+        for block in hand.mentsu:
             if block.type in ['minko','daiminkan']:
                 pass
             if block.type == 'shuntsu':
-                if self.agarihai.number == block.numbers[1]:
-                    self.machi_type_candidate.append('kanchan')
-                    self.machi_type= 'kanchan'
-                elif (block.numbers[0] == 1 and self.agarihai.number == 3)\
-                        or (block.numbers[2] == 9 and self.agarihai.number == 7):
-                    self.machi_type_candidate.append('penchan')
-                    self.machi_type= 'penchan'
-                elif self.agarihai.number in block.numbers:
-                    self.machi_type_candidate.append('ryanmen')
-                    self.machi_type = 'ryanmen'
-            elif self.agarihai.number in block.numbers:
-                self.machi_type_candidate.append('shabo')
-                self.machi_type = 'shabo'
+                if hand.agarihai.number == block.numbers[1]:
+                    hand.machi_type_candidate.append('kanchan')
+                    hand.machi_type= 'kanchan'
+                elif (block.numbers[0] == 1 and hand.agarihai.number == 3)\
+                        or (block.numbers[2] == 9 and hand.agarihai.number == 7):
+                    hand.machi_type_candidate.append('penchan')
+                    hand.machi_type= 'penchan'
+                elif hand.agarihai.number in block.numbers:
+                    hand.machi_type_candidate.append('ryanmen')
+                    hand.machi_type = 'ryanmen'
+            elif hand.agarihai.number in block.numbers:
+                hand.machi_type_candidate.append('shabo')
+                hand.machi_type = 'shabo'
 
-    def yaku_check(self):
+    def yaku_check(self, hand):
         self.yaku = []
 
         def double_reach(player):
@@ -348,6 +349,7 @@ class HandAnalyzer:
         return mentsu_check
 
     def hora_flag(self, contents, ronhai, furo):
+        #contents, ronhai, furo を破壊しないはず。。
         mentsu_list_func = self.mentsu_list_func()
         mentsu = []
         if self.chitoitsu_check(contents):
@@ -369,33 +371,39 @@ class HandAnalyzer:
         else:
             return False
 
-    def tenpai_flag(self):
-        #使ってない
-#        hand = copy.deepcopy(self)
-        contents = self.contents
-        matihais = []
-        if len(self.hand) in [2, 5, 8]:
+    def tenpai_flag(self, contents, ronhai, furo):
+        #contents, ronhai, furo を破壊しないはず。。
+        #ronhai, furoは必要ないので決していいと思う
+        contents = contents[:]
+        matinums = {}
+        print(sum(contents))
+        if sum(contents) in set((2, 5, 8)):
             for i in range(10):
-                contents_reduced = self.contents[:]
                 if contents[i] > 0:
-                    contents_reduced[i] -= 1
+                    contents[i] -= 1
                 else:
                     continue
                 for j in range(10):
-                    contents_temp = contents_reduced[:]
-                    contents_temp[j] += 1
-                    if self.hora_flag(contents_temp):
-                        matihais.append(i)
-                        break
-            if matihais != []:
-                return True
-            else:
-                return False
+                    contents[j] += 1
+                    if self.hora_flag(contents, ronhai, furo):
+                        if i not in matinums:
+                            matinums[i] = []
+                        matinums[i].append(j)
+                    contents[j] -= 1
+                contents[i] += 1
+            if matinums != {}:
+                return matinums
+            return False
 
         for i in range(10):
             contents[i] += 1
-            if self.hora_flag(contents):
-                return True
+            if self.hora_flag(contents, ronhai, furo):
+                if None not in matinums:
+                    matinums[None] = []
+                matinums[None].append(i)
+            contents[i] -= 1
+        if matinums != {}:
+            return matinums
         return False
 
     def nakipattern(self, hai):
@@ -421,5 +429,5 @@ if __name__ == "__main__":
     hand = hand.Hand(deck, player, test=[0,0,1,2,2,3,3,8], gui=False)
     hand.show_hand()
     a = HandAnalyzer()
-    print(a.hora_flag(hand.contents, hand.ronhai, hand.furo))
+    print(a.tenpai_flag(hand.contents, hand.ronhai, hand.furo))
 
