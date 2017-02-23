@@ -426,16 +426,15 @@ class HandAnalyzer:
             return matinums
         return False
 
-    def nakipattern(self, hai):
-        IsReach = self.player.reach
+    def nakipattern(self, contents, hai, IsReach):
         def pon_check(hai):
-            return (not IsReach) and self.contents[hai.number] >= 2
+            return (not IsReach) and contents[hai.number] >= 2
         def kan_check(hai):
-            return (not IsReach) and self.contents[hai.number] >= 3
+            return (not IsReach) and contents[hai.number] >= 3
         def ron_check(hai):
-            contents = self.contents[:]
+            contents = contents[:]
             contents[hai.number] += 1
-            return self.hora_flag(contents, hai, True)
+            return self.hora_flag(contents, hai)
         nakipattern = []
         if pon_check(hai): nakipattern.append("pon")
         if kan_check(hai): nakipattern.append("kan")
