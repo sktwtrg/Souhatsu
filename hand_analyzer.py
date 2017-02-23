@@ -1,5 +1,5 @@
 import souhatsu
-import hand
+from hand import Hand
 import SouhatsuEnums
 from souhatsu import Block
 
@@ -397,7 +397,6 @@ class HandAnalyzer:
         #ronhai, furoは必要ないので決していいと思う
         contents = contents[:]
         matinums = {}
-        print(sum(contents))
         if sum(contents) in set((2, 5, 8)):
             for i in range(10):
                 if contents[i] > 0:
@@ -446,8 +445,31 @@ class HandAnalyzer:
 if __name__ == "__main__":
     deck = souhatsu.Deck()
     player = souhatsu.Player('aaa')
-#    hand = hand.Hand(deck, player, test=[0,0,0,1,1,1,1,2], gui=False)
-    hand = hand.Hand(deck, player, test=[0,0,1,2,2,3,3,8], gui=False)
-    hand.show_hand()
     a = HandAnalyzer()
+    #和了でない例
+    hand = Hand(deck, player, test=[0,0,1,2,2,3,3,8], gui=False)
+    hand.show_hand()
+    print('テンパイ')
     print(a.tenpai_flag(hand.contents, hand.ronhai, hand.furo))
+    print('和了')
+    print(a.hora_flag(hand.contents, hand.ronhai, hand.furo))
+    print()
+
+    #和了例
+    hand = Hand(deck, player, test=[0,0,0,1,1,1,2,2], gui=False)
+    hand.show_hand()
+    print('テンパイ')
+    print(a.tenpai_flag(hand.contents, hand.ronhai, hand.furo))
+    print('和了')
+    print(a.hora_flag(hand.contents, hand.ronhai, hand.furo))
+    print()
+
+    #テンパイ例
+    hand = Hand(deck, player, test=[0,0,0,1,1,1,1,2], gui=False)
+    hand.show_hand()
+    print('テンパイ')
+    print(a.tenpai_flag(hand.contents, hand.ronhai, hand.furo))
+    print('和了')
+    print(a.hora_flag(hand.contents, hand.ronhai, hand.furo))
+    print()
+
