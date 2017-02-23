@@ -8,174 +8,193 @@ class HandAnalyzer:
     def __init__(self):
         pass
 
+    def analyze(self):
+        self.mentsu = []
+        self.hansu = int()
+        self.fu = int()
+        self.ten = int()
+        self.yaku_list = []
+        self.head = int()
+        self.machi_type= ''
+        self.machi_type_candidate = []
+
     def machi_type_check(self, hand):
         #TODO:描き方変？
         #agarihaiいつセットされるか問題 head問題
+        # hand.mentsu それぞれのタイプがsetされてる必要あり
+        # hand.agarihai がsetされてる必要性
+        machi_type_candidate = []
+        machi_type = ''
         if hand.mentsu[0].type == 'chitoitsu':
-            hand.machi_type_candidate.append('tanki')
-            hand.machi_type= 'tanki'
+            machi_type_candidate.append('tanki')
+            machi_type= 'tanki'
         elif hand.agarihai.number in hand.head.numbers:
-            hand.machi_type_candidate.append('tanki')
-            hand.machi_type= 'tanki'
+            machi_type_candidate.append('tanki')
+            machi_type= 'tanki'
 
         for block in hand.mentsu:
             if block.type in ['minko','daiminkan']:
                 pass
             if block.type == 'shuntsu':
                 if hand.agarihai.number == block.numbers[1]:
-                    hand.machi_type_candidate.append('kanchan')
-                    hand.machi_type= 'kanchan'
+                    machi_type_candidate.append('kanchan')
+                    machi_type= 'kanchan'
                 elif (block.numbers[0] == 1 and hand.agarihai.number == 3)\
                         or (block.numbers[2] == 9 and hand.agarihai.number == 7):
-                    hand.machi_type_candidate.append('penchan')
-                    hand.machi_type= 'penchan'
+                    machi_type_candidate.append('penchan')
+                    machi_type= 'penchan'
                 elif hand.agarihai.number in block.numbers:
-                    hand.machi_type_candidate.append('ryanmen')
-                    hand.machi_type = 'ryanmen'
+                    machi_type_candidate.append('ryanmen')
+                    machi_type = 'ryanmen'
             elif hand.agarihai.number in block.numbers:
-                hand.machi_type_candidate.append('shabo')
-                hand.machi_type = 'shabo'
+                machi_type_candidate.append('shabo')
+                machi_type = 'shabo'
+        return (machi_type_candidate, machi_type)
 
     def yaku_check(self, hand):
-        self.yaku = []
+        # hand.head, hand.ronhai, hand.mentsu, hand.machi_type_candidateなどが必要
+        # なので、analyzerでmachi_type や hora_flagで計算後setの必要
+        # hand.yaku, hand.fu, hand.hansuの変更を行わず、返す
+        yaku_list = []
+        hansu = 0
+        fu = 0
 
         def double_reach(player):
             if player.double_reach == True:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("double_reach"))
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("double_reach"))
 
         def reach(player):
             if player.reach == True and \
                     player.double_reach == False:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("reach"))
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("reach"))
 
         def yakuhai():
-            if self.contents[0] == 3:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("yaku"))
-            for block in self.furo:
+            if hand.contents[0] == 3:
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("yaku"))
+            for block in hand.furo:
                 if 0 in block.numbers:
-                    self.yaku.append(SouhatsuEnums.Yaku.valueOf("yaku"))
+                    yaku_list.append(SouhatsuEnums.Yaku.valueOf("yaku"))
 
         def tannyao():
-            if self.contents[0] == 0 \
-                    and self.contents[1] == 0 \
-                    and self.contents[9] == 0:
+            if hand.contents[0] == 0 \
+                    and hand.contents[1] == 0 \
+                    and hand.contents[9] == 0:
                 pass
             else:
                 return
-            for block in self.furo:
+            for block in hand.furo:
                 if 0 in block.numbers or\
                         1 in block.numbers or\
                         9 in block.numbers:
                     return
             else:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("tannyao"))
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("tannyao"))
 
 
         def pinfu():
-            if not self.mensen:
+            if not hand.mensen:
                 return
 
-            if 'ryanmen' not in self.machi_type_candidate:
+            if 'ryanmen' not in hand.machi_type_candidate:
                 return
-            for block in self.mentsu:
+            for block in hand.mentsu:
                 if block.fu != 0:
                     return
-            if self.head.fu != 0:
+            if hand.head.fu != 0:
                 return
-            self.yaku.append(SouhatsuEnums.Yaku.valueOf("pinfu"))
+            yaku_list.append(SouhatsuEnums.Yaku.valueOf("pinfu"))
 
-            if self.ronhai == -1:
-                self.fu = 20
+            if hand.ronhai == -1:
+                fu = 20
 
         def tsumo():
-            if self.ronhai == -1 \
-                    and self.mensen:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("tsumo"))
+            if hand.ronhai == -1 \
+                    and hand.mensen:
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("tsumo"))
 
         def ippatsu(player):
             if player.ippatsu_flag == True:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("ippatsu"))
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("ippatsu"))
 
         def chitoitsu():
-            if self.mentsu[0].type == 'chitoitsu':
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("chitoitsu"))
-                self.fu = 25
+            if hand.mentsu[0].type == 'chitoitsu':
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("chitoitsu"))
+                fu = 25
 
         def rinshan(player):
             if player.rinshan == True:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("rinshan"))
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("rinshan"))
 
         def ryuiso():
-            for hai in self.hand:
+            for hai in hand.hand:
                 if not hai.is_ryuhai:
                     break
             else:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("ryuiso"))
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("ryuiso"))
 
         def tenhou(player):
             if player.tenhou_flag:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("tenhou"))
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("tenhou"))
 
         def chihou(player):
             if player.chihou_flag and\
-                    self.ronhai == -1:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("chihou"))
+                    hand.ronhai == -1:
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("chihou"))
 
         def renhou(player):
             if player.chihou_flag and\
-                    self.ronhai != -1:
-                self.yaku.append(SouhatsuEnums.Yaku.valueOf("renhou"))
+                    hand.ronhai != -1:
+                yaku_list.append(SouhatsuEnums.Yaku.valueOf("renhou"))
 
         def toitoihou():
-            for block in self.mentsu:
+            for block in hand.mentsu:
                 if block.type not in ('minko', 'anko', 'ankan', 'daiminkan'):
                     return
-            self.yaku.append(SouhatsuEnums.Yaku.valueOf("toitoihou"))
+            yaku_list.append(SouhatsuEnums.Yaku.valueOf("toitoihou"))
 
         def ryananko():
-            for block in self.mentsu:
+            for block in hand.mentsu:
                 if block.type not in ('anko', 'ankan'):
                     return
-            self.yaku.append(SouhatsuEnums.Yaku.valueOf("ryananko"))
+            yaku_list.append(SouhatsuEnums.Yaku.valueOf("ryananko"))
 
         def ipeiko():
             #TODO:未実装、必要？
             return
 
         def chanta_etc():
-            if self.mentsu[0].type == 'chitoitsu':
+            if hand.mentsu[0].type == 'chitoitsu':
                 return
 
-            for block in self.mentsu:
+            for block in hand.mentsu:
                 if not (block.type in ('anko', 'minko', 'ankan', 'minkan')\
                         and block.numbers[0] in (0,1,9)):
                     break
             else:
-                if self.head.numbers[0]in (0,1,9):
-                    self.yaku.append(SouhatsuEnums.Yaku.valueOf("honroutou"))
+                if hand.head.numbers[0]in (0,1,9):
+                    yaku_list.append(SouhatsuEnums.Yaku.valueOf("honroutou"))
                     return
 
-            for block in self.mentsu:
+            for block in hand.mentsu:
                 if block.numbers[0] != 1 and\
                         block.numbers[2] != 9:
                     break
             else:
-                if self.head.numbers[0]in (1,9):
-                    self.yaku.append(SouhatsuEnums.Yaku.valueOf("junchan"))
+                if hand.head.numbers[0]in (1,9):
+                    yaku_list.append(SouhatsuEnums.Yaku.valueOf("junchan"))
                     return
 
-            for block in self.mentsu:
+            for block in hand.mentsu:
                 if block.numbers[0] not in (0,1) and\
                         block.numbers[2] != 9:
                     break
             else:
-                if self.head.numbers[0]in (0,1,9):
-                    self.yaku.append(SouhatsuEnums.Yaku.valueOf("chanta"))
+                if hand.head.numbers[0]in (0,1,9):
+                    yaku_list.append(SouhatsuEnums.Yaku.valueOf("chanta"))
                     return
 
 
 
-        hand = list(self.hand)
         double_reach(player)
         reach(player)
         pinfu()
@@ -194,8 +213,9 @@ class HandAnalyzer:
         ipeiko()
         chanta_etc()
 
-        for yaku in self.yaku:
-            self.hansu += yaku.hansu
+        for yaku in yaku_list:
+            hansu += yaku.hansu
+        return(yaku_list, hansu, fu)
 
     def fu_check(self):
         if self.fu in (20,25):
@@ -350,13 +370,14 @@ class HandAnalyzer:
 
     def hora_flag(self, contents, ronhai, furo):
         #contents, ronhai, furo を破壊しないはず。。
+        #mentsu_list_funcは上がってない場合Falseを返す
         mentsu_list_func = self.mentsu_list_func()
-        mentsu = []
+        mentsu_list = []
         if self.chitoitsu_check(contents):
             block = Block([SouhatsuEnums.Hai.valueAt(0)], block_type = "chitoitsu")
-            mentsu.append(block)
+            mentsu_list.append(block)
             head = Block([SouhatsuEnums.Hai.valueAt(0)], block_type = "head")
-            return (head, mentsu)
+            return (head, mentsu_list)
 
         for i, number in enumerate(contents):
             contents_check = contents[:]
@@ -364,10 +385,10 @@ class HandAnalyzer:
                 contents_check[i] -= 2
                 head = Block([SouhatsuEnums.Hai.valueAt(i)]*2, block_type = "head")
                 #一つ目の面子チェック
-                mentsu = mentsu_list_func(contents_check, ronhai, 0)
-                if mentsu:
-                    mentsu += furo
-                    return (head, mentsu)
+                mentsu_list = mentsu_list_func(contents_check, ronhai, 0)
+                if mentsu_list:
+                    mentsu_list += furo
+                    return (head, mentsu_list)
         else:
             return False
 
@@ -430,4 +451,3 @@ if __name__ == "__main__":
     hand.show_hand()
     a = HandAnalyzer()
     print(a.tenpai_flag(hand.contents, hand.ronhai, hand.furo))
-
