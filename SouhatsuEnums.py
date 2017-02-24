@@ -2,7 +2,8 @@ from sdl2 import *
 import sdl2.ext as sdl2ext
 from enum import Enum
 
-from sdl2systems import Velocity
+from sdl2systems import Velocity, pilSurface
+from PIL import Image
 
 class TenbouEntity(sdl2ext.Entity):
 
@@ -79,6 +80,7 @@ class Hai(Enum):
     SU9 = (9, 9, '九索', 'jiu', './pai-images/sou9-66-90-l-emb.png')
     HATSU = (0, 0, '發', 'fa', './pai-images/ji5-66-90-l.png')
     DS5 = (10, 5, '赤五', 'rw', './pai-images/aka2-66-90-l-emb.png')
+    NONE = (-1, -1, 'None', 'None', './pai-images/ji6-66-90-l.png')
 
     def __init__(self, _id, _number, _hainame, _chiname, _img_path):
         self._id = _id
@@ -126,7 +128,12 @@ class Hai(Enum):
     @property
     def is_ryuhai(self):
         return self.number in [0,2,3,4,6,8]
-    
+
+#    @property
+#    def surface(self):
+#        img_pil = Image.open(self.img_path)
+#        img_pil = img_pil.resize((40,60))
+#        return pilSurface(img_pil)
 
 
 class Yaku(Enum):
@@ -144,12 +151,12 @@ class Yaku(Enum):
     tenhou = (10, "天和", "tenhou", 100)
     chihou = (11, "地和", "chihou", 100)
     renhou = (12, "人和", "renhou", 4)
-
     toitoihou = (13, "対々和", "toitoihou", 2)
     ryananko = (14, "二暗刻", "ryananko", 2)
     ipeiko = (15, "一盃口", "ipeiko", 1)
     chanta = (16, "全帯", "chanta", 2)
     junchan = (17, "純全帯", "junchan", 3)
+
     haitei = (18, "海底撈月", "haitei", 1)
     houtei = (19, "河底撈魚", "houtei", 1)
     honroutou = (20, "混老頭", "honroutou", 2)

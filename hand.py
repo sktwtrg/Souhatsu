@@ -1,5 +1,5 @@
 import souhatsu
-import SouhatsuEnums
+from SouhatsuEnums import Hai, HaiEntity
 
 class Hand:
 
@@ -13,9 +13,9 @@ class Hand:
         self.contents = [0]*10
         self.head = int()
         self.mentsu = []
-        self.tsumohai = -1
-        self.ronhai = -1
-        self.agarihai = -1
+        self.tsumohai = Hai.valueAt(-1)
+        self.ronhai = Hai.valueAt(-1)
+        self.agarihai = Hai.valueAt(-1)
         self.hansu = 0
         self.fu = 0
         self.ten = 0
@@ -64,22 +64,22 @@ class Hand:
         contents = list(self.contents)[:]
         hand = list(self.hand)[:]
 
-        if self.tsumohai != -1: contents[self.tsumohai.number] -= 1
+        if self.tsumohai.number != -1: contents[self.tsumohai.number] -= 1
 
         for i in range(10):
             for j in range(contents[i]):
                 print(repr(i) + ",", end="")
-        if self.tsumohai != -1:
+        if self.tsumohai.number != -1:
             print("T" + str(self.tsumohai.number), end="")
         if self.furo != []:
             print("副露:",self.furo)
         print()
 
-        if self.tsumohai != -1:
+        if self.tsumohai.number != -1:
             hand.remove(self.tsumohai)
         for item in hand:
             print(item.hainame, end=',')
-        if self.tsumohai != -1:
+        if self.tsumohai.number != -1:
             print("T" + self.tsumohai.hainame)
         else:
             print()
@@ -101,7 +101,7 @@ class Hand:
         img_pil = Image.open(self.tsumohai.img_path)
         img_pil = img_pil.resize(Hand.hai_size)
         img_surface = pilSurface(img_pil)
-        entity = SouhatsuEnums.HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
+        entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
 
         self.movement.hais.append(entity) 
         self.entities.append(entity)
@@ -111,7 +111,7 @@ class Hand:
         return self.tsumohai
         
     def test_tsumo(self, number):
-        self.tsumohai = SouhatsuEnums.Hai.valueAt(number)
+        self.tsumohai = Hai.valueAt(number)
         self.hand.append(self.tsumohai)
         self.contents[self.tsumohai.number] += 1
         if not self.gui:
@@ -121,7 +121,7 @@ class Hand:
         img_pil = Image.open(self.tsumohai.img_path)
         img_pil = img_pil.resize(Hand.hai_size)
         img_surface = pilSurface(img_pil)
-        entity = SouhatsuEnums.HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
+        entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
 
         self.movement.hais.append(entity) 
         self.entities.append(entity)
@@ -235,7 +235,7 @@ class Hand:
     #ron後 hora処理
     def ron(self, hai):
         self.ronhai = hai
-        self.tsumohai = -1
+        self.tsumohai = Hai.valueAt(-1)
         self.contents[hai.number] += 1
         self.hand.append(hai)
         self.agarihai = hai

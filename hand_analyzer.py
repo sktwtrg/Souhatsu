@@ -105,11 +105,11 @@ class HandAnalyzer:
                 return
             yaku_list.append(SouhatsuEnums.Yaku.valueOf("pinfu"))
 
-            if hand.ronhai == -1:
+            if hand.ronhai.number == -1:
                 fu = 20
 
         def tsumo():
-            if hand.ronhai == -1 \
+            if hand.ronhai.number == -1 \
                     and hand.mensen:
                 yaku_list.append(SouhatsuEnums.Yaku.valueOf("tsumo"))
 
@@ -139,12 +139,12 @@ class HandAnalyzer:
 
         def chihou(player):
             if player.chihou_flag and\
-                    hand.ronhai == -1:
+                    hand.ronhai.number == -1:
                 yaku_list.append(SouhatsuEnums.Yaku.valueOf("chihou"))
 
         def renhou(player):
             if player.chihou_flag and\
-                    hand.ronhai != -1:
+                    hand.ronhai.number != -1:
                 yaku_list.append(SouhatsuEnums.Yaku.valueOf("renhou"))
 
         def toitoihou():
@@ -221,7 +221,7 @@ class HandAnalyzer:
     def fu_check(self, hand):
         if hand.fu in (20,25):
             return hand.fu
-        if hand.ronhai == -1:
+        if hand.ronhai.number == -1:
             fu = 22
         elif hand.mensen:
             fu = 30
@@ -252,9 +252,9 @@ class HandAnalyzer:
                 ten = 32000
             if kaze.enname == 'oya':
                 ten = int(1.5 * ten)
-                if hand.ronhai == -1:
+                if hand.ronhai.number == -1:
                     ten = int(2.0 * ten / 3)
-            elif hand.ronhai == -1:
+            elif hand.ronhai.number == -1:
                 ten = int(3.0 * ten / 4)
             return ten
 
@@ -268,7 +268,7 @@ class HandAnalyzer:
             if ten >= 12000:
                 ten = 12000
 
-        if ronhai != -1:
+        if ronhai.number != -1:
             ten = int(1000 * math.ceil(0.001 * float(ten)))
         else:
             if kaze.enname == 'ko':
@@ -304,17 +304,13 @@ class HandAnalyzer:
                 return self.result_dict[tuple(check_contents)]
             mentsu_hais = []
             #TODO そもそもronhaiのdefaultが-1なのが悪い
-            if ronhai == -1:
-                ronhai_num = -1
-            else:
-                ronhai_num = ronhai.number
             if check_contents[0] >= 3:
                 check_contents[0] -= 3
                 for x in range(3):
                     mentsu_hais.append(
                             SouhatsuEnums.Hai.valueAt(0)
                             )
-                if ronhai_num == 0:
+                if ronhai.number == 0:
                     mentsu_list.append(
                             Block(
                                 mentsu_hais,
@@ -339,7 +335,7 @@ class HandAnalyzer:
                     check_contents[i] -= 3
                     for x in range(3):
                         mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
-                    if ronhai_num == i:
+                    if ronhai.number == i:
                         mentsu_list.append(
                                 Block(
                                     mentsu_hais,
