@@ -1,3 +1,4 @@
+import math
 import souhatsu
 from hand import Hand
 import SouhatsuEnums
@@ -217,61 +218,64 @@ class HandAnalyzer:
             hansu += yaku.hansu
         return(yaku_list, hansu, fu)
 
-    def fu_check(self):
-        if self.fu in (20,25):
-            return
-        if self.ronhai == -1:
-            self.fu = 22
-        elif self.mensen:
-            self.fu = 30
+    def fu_check(self, hand):
+        if hand.fu in (20,25):
+            return hand.fu
+        if hand.ronhai == -1:
+            fu = 22
+        elif hand.mensen:
+            fu = 30
         else:
-            self.fu = 20
+            fu = 20
 
-        for block in self.mentsu:
-            self.fu += block.fu
+        for block in hand.mentsu:
+            fu += block.fu
 
-        self.fu += self.head.fu
+        fu += hand.head.fu
 
-        if self.machi_type_candidate[0] in ['penchan', 'kanchan', 'tanki']:
-            self.fu += 2
-        self.fu = int(10 * math.ceil(float(self.fu) * 0.1))
+        if hand.machi_type_candidate[0] in ['penchan', 'kanchan', 'tanki']:
+            fu += 2
+        fu = int(10 * math.ceil(float(hand.fu) * 0.1))
+        return fu
 
-    def ten_check(self):
+    def ten_check(self, hand):
         #ハネマン以上
-        if self.hansu >= 6:
-            if self.hansu in (6,7):
-                self.ten = 12000
-            elif self.hansu in (8,9,10):
-                self.ten = 16000
-            elif self.hansu in (11,12):
-                self.ten = 24000
+        kaze = hand.player.kaze
+        if hand.hansu >= 6:
+            if hand.hansu in (6,7):
+                ten = 12000
+            elif hand.hansu in (8,9,10):
+                ten = 16000
+            elif hand.hansu in (11,12):
+                ten = 24000
             else:
-                self.ten = 32000
-            if self.player.kaze.enname == 'oya':
-                self.ten = int(1.5 * self.ten)
-                if self.ronhai == -1:
-                    self.ten = int(2.0 * self.ten / 3)
-            elif self.ronhai == -1:
-                self.ten = int(3.0 * self.ten / 4)
-            return
+                ten = 32000
+            if kaze.enname == 'oya':
+                ten = int(1.5 * ten)
+                if hand.ronhai == -1:
+                    ten = int(2.0 * ten / 3)
+            elif hand.ronhai == -1:
+                ten = int(3.0 * ten / 4)
+            return ten
 
         #満貫以下
-        if self.player.kaze.enname == 'ko':
-            self.ten = int(100 * math.ceil(0.01 * self.fu * 4 * float(pow(2, 2 + self.hansu))))
-            if self.ten >= 8000:
-                self.ten = 8000
-        elif self.player.kaze.enname == 'oya':
-            self.ten = int(100 * math.ceil(0.01 * self.fu * 6 * float(pow(2, 2 + self.hansu))))
-            if self.ten >= 12000:
-                self.ten = 12000
+        if kaze.enname == 'ko':
+            ten = int(100 * math.ceil(0.01 * hand.fu * 4 * float(pow(2, 2 + hand.hansu))))
+            if ten >= 8000:
+                ten = 8000
+        elif kaze.enname == 'oya':
+            ten = int(100 * math.ceil(0.01 * hand.fu * 6 * float(pow(2, 2 + hand.hansu))))
+            if ten >= 12000:
+                ten = 12000
 
-        if self.ronhai != -1:
-            self.ten = int(1000 * math.ceil(0.001 * float(self.ten)))
+        if ronhai != -1:
+            ten = int(1000 * math.ceil(0.001 * float(ten)))
         else:
-            if self.player.kaze.enname == 'ko':
-                self.ten = int(1000 * math.ceil(0.001 * (float(self.ten)/4))) + int(1000 * math.ceil(0.001 * (float(self.ten)/2)))
-            elif self.player.kaze.enname == 'oya':
-                self.ten = int(1000 * math.ceil(0.001 * (float(self.ten)/3))) * 2
+            if kaze.enname == 'ko':
+                ten = int(1000 * math.ceil(0.001 * (float(ten)/4))) + int(1000 * math.ceil(0.001 * (float(ten)/2)))
+            elif kaze.enname == 'oya':
+                ten = int(1000 * math.ceil(0.001 * (float(ten)/3))) * 2
+        return ten
 
 
     @staticmethod
@@ -299,20 +303,24 @@ class HandAnalyzer:
             if tuple(check_contents) in self.result_dict:
                 return self.result_dict[tuple(check_contents)]
             mentsu_hais = []
+            #TODO そもそもronhaiのdefaultが-1なのが悪い
+            if ronhai == -1:
+                ronhai_num = -1
+            else:
+                ronhai_num = ronhai.number
             if check_contents[0] >= 3:
                 check_contents[0] -= 3
                 for x in range(3):
                     mentsu_hais.append(
                             SouhatsuEnums.Hai.valueAt(0)
                             )
-                if ronhai != -1:
-                    if ronhai.number == 0:
-                        mentsu_list.append(
-                                Block(
-                                    mentsu_hais,
-                                    block_type = "minko"
-                                    )
+                if ronhai_num == 0:
+                    mentsu_list.append(
+                            Block(
+                                mentsu_hais,
+                                block_type = "minko"
                                 )
+                            )
                 else:
                     mentsu_list.append(
                             Block(
@@ -331,14 +339,13 @@ class HandAnalyzer:
                     check_contents[i] -= 3
                     for x in range(3):
                         mentsu_hais.append(SouhatsuEnums.Hai.valueAt(i))
-                    if ronhai != -1:
-                        if ronhai.number == i:
-                            mentsu_list.append(
-                                    Block(
-                                        mentsu_hais,
-                                        block_type = "minko"
-                                        )
+                    if ronhai_num == i:
+                        mentsu_list.append(
+                                Block(
+                                    mentsu_hais,
+                                    block_type = "minko"
                                     )
+                                )
                     else:
                         mentsu_list.append(
                                 Block(
@@ -426,15 +433,15 @@ class HandAnalyzer:
             return matinums
         return False
 
-    def nakipattern(self, contents, hai, IsReach):
+    def nakipattern(self, hand, hai):
         def pon_check(hai):
-            return (not IsReach) and contents[hai.number] >= 2
+            return (not hand.player.reach) and hand.contents[hai.number] >= 2
         def kan_check(hai):
-            return (not IsReach) and contents[hai.number] >= 3
+            return (not hand.player.reach) and hand.contents[hai.number] >= 3
         def ron_check(hai):
-            contents = contents[:]
-            contents[hai.number] += 1
-            return self.hora_flag(contents, hai)
+            check_contents = hand.contents[:]
+            check_contents[hai.number] += 1
+            return self.hora_flag(check_contents, hai, hand.furo)
         nakipattern = []
         if pon_check(hai): nakipattern.append("pon")
         if kan_check(hai): nakipattern.append("kan")
@@ -445,8 +452,9 @@ if __name__ == "__main__":
     deck = souhatsu.Deck()
     player = souhatsu.Player('aaa')
     a = HandAnalyzer()
+    #TODO player.make_hand player.kaze変
     #和了でない例
-    hand = Hand(deck, player, test=[0,0,1,2,2,3,3,8], gui=False)
+    hand = Hand(deck, player, test=[0,0,0,0,2,3,8,9], gui=False)
     hand.show_hand()
     print('テンパイ')
     print(a.tenpai_flag(hand.contents, hand.ronhai, hand.furo))
@@ -466,9 +474,31 @@ if __name__ == "__main__":
     #テンパイ例
     hand = Hand(deck, player, test=[0,0,0,1,1,1,1,2], gui=False)
     hand.show_hand()
+    player.kaze = SouhatsuEnums.Kaze.valueOf("oya")
+    player.make_hand(hand)
     print('テンパイ')
     print(a.tenpai_flag(hand.contents, hand.ronhai, hand.furo))
     print('和了')
     print(a.hora_flag(hand.contents, hand.ronhai, hand.furo))
+
+    #鳴きチェック
+    print('鳴き')
+    hand.trash(SouhatsuEnums.Hai.valueAt(2))
+    print(a.nakipattern(hand,
+            SouhatsuEnums.Hai.valueAt(0)))
     print()
+
+    #点数チェック
+    hand = Hand(deck, player, test=[0,0,0,1,1,1,2,3], gui=False)
+    player.kaze = SouhatsuEnums.Kaze.valueOf("oya")
+    player.make_hand(hand)
+    hand.show_hand()
+    hand.head, hand.mentsu = a.hora_flag(hand.contents, hand.ronhai, hand.furo)
+    hand.agarihai = SouhatsuEnums.Hai.valueAt(1)
+    hand.machi_type_candidate, hand.machi_type = a.machi_type_check(hand)
+    hand.yaku, hand.hansu , hand.fu = a.yaku_check(hand)
+    hand.fu = a.fu_check(hand)
+    hand.ten = a.ten_check(hand)
+    print(hand.ten)
+
 
