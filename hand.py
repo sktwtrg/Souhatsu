@@ -3,10 +3,7 @@ from SouhatsuEnums import Hai, HaiEntity
 
 class Hand:
 
-    #sizeなど外部か
-    hai_size = (40, 60)
-
-    def __init__(self, deck, player, world = None, factory = None, movement = None, initnum = 8, test = None, gui = True):
+    def __init__(self, deck, player, initnum = 8, test = None):
 
         self.player = player
         self.hand = list()
@@ -24,12 +21,6 @@ class Hand:
         self.yaku = []
         self.machi_type = None
         self.machi_type_candidate = []
-
-        self.gui = gui
-        self.entities = list()
-        self.world = world
-        self.factory = factory
-        self.movement = movement
 
         if test != None:
             for i in test:
@@ -94,46 +85,13 @@ class Hand:
         self.tsumohai = deck.draw()
         self.hand.append(self.tsumohai)
         self.contents[self.tsumohai.number] += 1
-
-        if not self.gui:
-            return self.tsumohai
-        #TODO:ここを関数化
-        img_pil = Image.open(self.tsumohai.img_path)
-        img_pil = img_pil.resize(Hand.hai_size)
-        img_surface = pilSurface(img_pil)
-        entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
-
-        self.movement.hais.append(entity) 
-        self.entities.append(entity)
-        self.world.hai_entities.append(entity)
-        self.world.process()
-        #TODO:ここまでなんとかする
         return self.tsumohai
-        
+
     def test_tsumo(self, number):
         self.tsumohai = Hai.valueAt(number)
         self.hand.append(self.tsumohai)
         self.contents[self.tsumohai.number] += 1
-        if not self.gui:
-            return self.tsumohai
-
-        #TODO:ここを関数化
-        img_pil = Image.open(self.tsumohai.img_path)
-        img_pil = img_pil.resize(Hand.hai_size)
-        img_surface = pilSurface(img_pil)
-        entity = HaiEntity(self.world, self.factory.from_surface(img_surface.contents), self.tsumohai, self.player.hand_pos[0] + 41 * (len(self.hand) - 1), self.player.hand_pos[1])
-
-        self.movement.hais.append(entity) 
-        self.entities.append(entity)
-        self.world.hai_entities.append(entity)
-        self.world.process()
-            #TODO:ここまでなんとかする
-
-    def rihai_move(self):
-        if not self.gui:
-            return
-        for i, entity in enumerate(self.entities):
-            entity.move(self.player.hand_pos[0] + (Hand.hai_size[0] + 1) * i, self.player.hand_pos[1])
+        return self.tsumohai
 
     def pon(self, hai):
         self.hand.append(hai)
@@ -143,29 +101,9 @@ class Hand:
         for i in range(3):
             self.hand.remove(hai)
             block_hais.append(hai)
-
-#        self.entities.append(entity)
-#        block_entities = []
-#        for i in range(3):
-#            for entity in self.entities:
-#                if entity.hai.number != num:
-#                    continue
-#                self.entities.remove(entity)
-#                block_entities.append(entity)
-#                break
         block = souhatsu.Block(block_hais, block_type = "minko")
-#        block.set_entities(block_entities)
-#        self.pon_move(block_entities)
         self.mensen = False
         self.furo.append(block)
-#        self.world.process()
-
-    def pon_move(self, entities):
-        position = (self.player.hand_pos[0] + len(self.player.hand.hand) * self.hai_size[0] + 20, self.player.hand_pos[1])
-        entities[0].move(position[0], position[1])
-        entities[1].move(position[0] + self.hai_size[0], position[1])
-        entities[2].move(position[0] + self.hai_size[0] * 2 , position[1])
-        self.rihai_move()
 
     # ツモはせずターンを飛ばして普通のツモをする（ツモはFieldで行う）
     def daiminkan(self, hai, deck):
@@ -180,26 +118,6 @@ class Hand:
         self.furo.append(block)
         self.mensen = False
         self.show_hand()
-#        self.entities.append(entity)
-#        block_entities = []
-#        for i in range(4):
-#            for entity in self.entities:
-#                if entity.hai.number != num:
-#                    continue
-#                self.entities.remove(entity)
-#                block_entities.append(entity)
-#                break
-#        block.set_entities(block_entities)
-#        self.daiminkan_move(block_entities)
-#        self.world.process()
-
-    def daiminkan_move(self, entities):
-        position = (self.player.hand_pos[0] + (len(self.player.hand.hand) + 1) * self.hai_size[0] + 20, self.player.hand_pos[1])
-        entities[0].move(position[0], position[1])
-        entities[1].move(position[0] + self.hai_size[0], position[1])
-        entities[2].move(position[0] + self.hai_size[0] * 2 , position[1])
-        entities[3].move(position[0] + self.hai_size[0] * 3 , position[1])
-        self.rihai_move()
 
     def ankan(self, hai, deck):
         num = hai.number
@@ -213,24 +131,6 @@ class Hand:
         block = souhatsu.Block(block_hais, block_type = "ankan")
         self.furo.append(block)
         self.show_hand()
-#        for i in range(4):
-#            for entity in self.entities:
-#                if entity.hai.number != num:
-#                    continue
-#                self.entities.remove(entity)
-#                block_entities.append(entity)
-#                break
-#        block.set_entities(block_entities)
-#        self.ankan_move(block_entities)
-#        self.world.process()
-
-    def ankan_move(self, entities):
-        position = (self.player.hand_pos[0] + (len(self.player.hand.hand) + 1) * self.hai_size[0] + 20, self.player.hand_pos[1])
-        entities[0].move(position[0], position[1])
-        entities[1].move(position[0] + self.hai_size[0], position[1])
-        entities[2].move(position[0] + self.hai_size[0] * 2 , position[1])
-        entities[3].move(position[0] + self.hai_size[0] * 3 , position[1])
-        self.rihai_move()
 
     #ron後 hora処理
     def ron(self, hai):
@@ -243,5 +143,5 @@ class Hand:
 if __name__ == "__main__":
     deck = souhatsu.Deck()
     player = souhatsu.Player('aaa')
-    hand = Hand(deck, player, test=[0,0,0,1,1,1,1,2], gui=False)
+    hand = Hand(deck, player, test=[0,0,0,1,1,1,1,2])
     hand.show_hand()
