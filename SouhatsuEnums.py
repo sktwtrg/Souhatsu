@@ -97,7 +97,7 @@ class Hai(Enum):
 
     @classmethod
     def AllHai(cls):
-        allhai = [hai for hai in cls if not hai.number == 5] * 4
+        allhai = [hai for hai in cls if not hai.number in [5, -1]] * 4
         allhai += [cls.SU5] * 3 + [cls.DS5]
         return allhai
 

@@ -34,7 +34,7 @@ def sprite_mouse_overlap(sprite, mouse):
     print(left,mx,right,top,my,bottom)
     return left < mx < right and top < my< bottom
 
-def MakeEntity():
+def make_entity(img_path, size, world, factory, movement):
     img_pil = Image.open(img_path)
     img_pil = img_pil.resize(size)
     img_surface = pilSurface(img_pil)

@@ -58,6 +58,7 @@ def tenpai_flag2(contents, hand2count_dict):
             hand2count_dict[tuple(contents)] = 0
             return True
 #            continue
+    return False
 
 
 def tenpai_flag(contents_list, hand2count_dict, count=1):
@@ -114,10 +115,10 @@ def shanten_check(contents, hand2count_dict):
     return None
 
 output = []
-def all_haipai():
+def all_haipai(maisu = 7):
     def tsumo(contents_list, count=0):
         global output
-        if count == 7 :
+        if count == maisu :
             output = contents_list[:]
             return True
         contents_list_out = []
@@ -152,6 +153,7 @@ tenpai_counter = 0
 ishanten_counter = 0
 hand2dict = {}
 for haipai in haipailist:
+#    print(haipai)
     if hora_flag(haipai):
         hora_counter += 1
 for haipai in haipailist:
@@ -165,9 +167,9 @@ tenpai_flag(list(haipailist),hand2dict)
 #
 print('hora_counter')
 print(hora_counter)
-print('hora_counter')
+print('tenpai_counter')
 print(tenpai_counter)
-print('hora_counter')
+print('ishanten_counter')
 print(ishanten_counter)
 print('all')
 print(len(haipailist))

@@ -1,14 +1,15 @@
-import souhatsu
-from SouhatsuEnums import Hai, HaiEntity
+from block import Block
+from deck import Deck
+from souhatsu_enums import Hai
+from player import Player
 
 class Hand:
 
-    def __init__(self, deck, player, initnum = 8, test = None):
+    def __init__(self, deck, initnum = 8, test = None):
 
-        self.player = player
         self.hand = list()
         self.contents = [0]*10
-        self.head = int()
+        self.head = Block([])
         self.mentsu = []
         self.tsumohai = Hai.valueAt(-1)
         self.ronhai = Hai.valueAt(-1)
@@ -101,7 +102,7 @@ class Hand:
         for i in range(3):
             self.hand.remove(hai)
             block_hais.append(hai)
-        block = souhatsu.Block(block_hais, block_type = "minko")
+        block = block(block_hais, block_type = "minko")
         self.mensen = False
         self.furo.append(block)
 
@@ -114,7 +115,7 @@ class Hand:
         for i in range(4):
             self.hand.remove(hai)
             block_hais.append(hai)
-        block = souhatsu.Block(block_hais, block_type = "daiminkan")
+        block = block(block_hais, block_type = "daiminkan")
         self.furo.append(block)
         self.mensen = False
         self.show_hand()
@@ -128,7 +129,7 @@ class Hand:
             self.hand.remove(hai)
             block_hais.append(hai)
         self.tsumo(deck)
-        block = souhatsu.Block(block_hais, block_type = "ankan")
+        block = block(block_hais, block_type = "ankan")
         self.furo.append(block)
         self.show_hand()
 
@@ -141,7 +142,7 @@ class Hand:
         self.agarihai = hai
 
 if __name__ == "__main__":
-    deck = souhatsu.Deck()
-    player = souhatsu.Player('aaa')
+    deck = Deck()
+    player = Player('aaa')
     hand = Hand(deck, player, test=[0,0,0,1,1,1,1,2])
     hand.show_hand()
