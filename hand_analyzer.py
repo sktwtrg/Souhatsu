@@ -3,6 +3,7 @@ import souhatsu
 from hand import Hand
 from block import Block
 from souhatsu_enums import Hai, Yaku, Kaze
+from horahand import HoraHand
 
 class HandAnalyzer:
 
@@ -16,35 +17,35 @@ class HandAnalyzer:
         self.ten = int()
         self.yaku_list = []
 
-    def machi_type_check(self, hand):
+    def machi_type_check(self, head, mentsu_list, agarihai):
         #TODO:描き方変？
         #agarihaiいつセットされるか問題 head問題
         # hand.mentsu それぞれのタイプがsetされてる必要あり
         # hand.agarihai がsetされてる必要性
         machi_type_candidate = []
         machi_type = ''
-        if hand.mentsu[0].type == 'chitoitsu':
+        if mentsu_list[0].type == 'chitoitsu':
             machi_type_candidate.append('tanki')
             machi_type= 'tanki'
-        elif hand.agarihai.number in hand.head.numbers:
+        elif agarihai.number in head.numbers:
             machi_type_candidate.append('tanki')
             machi_type= 'tanki'
 
-        for block in hand.mentsu:
+        for block in mentsu_list:
             if block.type in ['minko','daiminkan']:
                 pass
             if block.type == 'shuntsu':
-                if hand.agarihai.number == block.numbers[1]:
+                if agarihai.number == block.numbers[1]:
                     machi_type_candidate.append('kanchan')
                     machi_type= 'kanchan'
-                elif (block.numbers[0] == 1 and hand.agarihai.number == 3)\
-                        or (block.numbers[2] == 9 and hand.agarihai.number == 7):
+                elif (block.numbers[0] == 1 and agarihai.number == 3)\
+                        or (block.numbers[2] == 9 and agarihai.number == 7):
                     machi_type_candidate.append('penchan')
                     machi_type= 'penchan'
-                elif hand.agarihai.number in block.numbers:
+                elif agarihai.number in block.numbers:
                     machi_type_candidate.append('ryanmen')
                     machi_type = 'ryanmen'
-            elif hand.agarihai.number in block.numbers:
+            elif agarihai.number in block.numbers:
                 machi_type_candidate.append('shabo')
                 machi_type = 'shabo'
         return (machi_type_candidate, machi_type)
@@ -275,6 +276,21 @@ class HandAnalyzer:
                 ten = int(1000 * math.ceil(0.001 * (float(ten)/3))) * 2
         return ten
 
+    @staticmethod
+    def pinfu_ipeiko_check(contents, ronhai):
+        # chitoitsu_checkのあと実行
+        counter = 0
+        contents = contents[1:]
+        for id, i in enumerate(contents):
+            index = id + 1
+            if i == 2:
+                counter += 1
+            else:
+                counter = 0
+            if counter == 3:
+                if ronhai.number != index - 1:
+                    return True
+        return False
 
     @staticmethod
     def chitoitsu_check(contents):
@@ -286,6 +302,8 @@ class HandAnalyzer:
                 return True
 
     def mentsu_check(self, check_contents, ronhai, count, mentsu_list):
+        if check_contents == [0] * 10:
+            return mentsu_list
         mentsu_hais = []
         if check_contents[0] >= 3:
             check_contents[0] -= 3
@@ -310,6 +328,7 @@ class HandAnalyzer:
             #発面子を抜いて面子チェック
             if self.mentsu_check(check_contents, ronhai, count+1, mentsu_list):
                 return mentsu_list
+            check_contents[0] += 3
             del mentsu_list[-1]
 
         for i in range(1,10):
@@ -334,6 +353,7 @@ class HandAnalyzer:
                 if self.mentsu_check(check_contents, ronhai, count+1, mentsu_list):
                     return mentsu_list
                 del mentsu_list[-1]
+                check_contents[i] += 3
             #8,9,10の順子は存在しないのでcontinue
             elif i >= 8:
                 continue
@@ -345,30 +365,52 @@ class HandAnalyzer:
                 #順子を抜いて面子チェック
                 if self.mentsu_check(check_contents, ronhai, count+1, mentsu_list):
                     return mentsu_list
+                for x in range(3):
+                    check_contents[i + x] += 1
                 del mentsu_list[-1]
         else:
             return False
 
     def hora_flag(self, contents, ronhai=Hai.valueAt(-1), furo=[]):
         #contents, ronhai, furo を破壊しないはず。。
-        #mentsu_list_funcは上がってない場合Falseを返す
         mentsu_list = []
+        horahand = HoraHand()
+
         if self.chitoitsu_check(contents):
-            block = Block([Hai.valueAt(0)], block_type = "chitoitsu")
+            #ron のとき pinfu_ipeikoがあればそっち
+            if ronhai != Hai.valueAt(-1):
+                if self.pinfu_ipeiko_check(contents, ronhai):
+                    horahand.ipeiko = True
+                    horahand.pinfu = True
+                else:
+                    horahand.chitoitsu = True
+
+            else:
+                horahand.chitoitsu = True
+            block = Block([Hai.valueAt(0)]*2, block_type = "chitoitsu")
             mentsu_list.append(block)
             head = Block([Hai.valueAt(0)], block_type = "head")
-            return (head, mentsu_list)
+            horahand.head = head
+            horahand.mentsu_list = mentsu_list
+            return horahand
 
         for i, number in enumerate(contents):
             contents_check = contents[:]
             if contents_check[i] >= 2:
                 contents_check[i] -= 2
                 head = Block([Hai.valueAt(i)]*2, block_type = "head")
+                if contents_check == [0] * 10:
+                    mentsu_list += furo
+                    horahand.head = head
+                    horahand.mentsu_list = mentsu_list
+                    return horahand
                 #一つ目の面子チェック
                 self.mentsu_check(contents_check, ronhai, 0, mentsu_list)
                 if mentsu_list:
                     mentsu_list += furo
-                    return (head, mentsu_list)
+                    horahand.head = head
+                    horahand.mentsu_list = mentsu_list
+                    return horahand
         else:
             return False
 
@@ -426,7 +468,7 @@ if __name__ == "__main__":
     a = HandAnalyzer()
     #TODO player.make_hand player.kaze変
     #和了でない例
-    hand = Hand(deck, test=[0,0,0,0,2,3,8,9])
+    hand = Hand(deck, test=[0,0,0,1,2,3,8,9])
     hand.show_hand()
     print('テンパイ')
     print(a.tenpai_flag(hand.contents))
@@ -476,14 +518,33 @@ if __name__ == "__main__":
     player.kaze = Kaze.valueOf("oya")
     player.make_hand(hand)
     hand.show_hand()
-    hand.head, hand.mentsu = a.hora_flag(hand.contents, hand.ronhai, hand.furo)
-    print("aaa")
-    print(type(hand.head))
+    horahand = a.hora_flag(hand.contents, hand.ronhai, hand.furo)
+    print(horahand)
+    hand.head = horahand.head
+    hand.mentsu = horahand.mentsu_list
     hand.agarihai = Hai.valueAt(1)
-    hand.machi_type_candidate, hand.machi_type = a.machi_type_check(hand)
-    hand.yaku, hand.hansu ,hand.fu = a.yaku_check(hand, player)
-    hand.fu = a.fu_check(hand)
-    hand.ten = a.ten_check(hand, player)
-    print(hand.ten)
+#    hand.machi_type_candidate, hand.machi_type = a.machi_type_check(hand)
+#    hand.yaku, hand.hansu ,hand.fu = a.yaku_check(hand, player)
+#    hand.fu = a.fu_check(hand)
+#    hand.ten = a.ten_check(hand, player)
+#    print(hand.ten)
+
+
+    #pinfu ipeiko check
+    hand = Hand(deck, player, test=[0,0,2,2,3,3,4,4])
+    player.kaze = Kaze.valueOf("oya")
+    player.make_hand(hand)
+    hand.show_hand()
+    horahand = a.hora_flag(hand.contents, Hai.valueAt(2))
+    print(horahand.ipeiko)
+    hand.head = horahand.head
+    hand.mentsu = horahand.mentsu_list
+
+    print("last")
+    hand = Hand(deck, player, test=[0,0,2,2,4,4,8,8])
+    horahand = a.hora_flag(hand.contents, Hai.valueAt(0))
+    print(horahand)
+    horahand = a.hora_flag(hand.contents)
+    print(horahand)
 
 
